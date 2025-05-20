@@ -2,7 +2,8 @@ import Year from "../models/YearModel.js";
 import Month from "../models/MonthModel.js";
 import Monitoring from "../models/MonitoringModel.js";
 import { Op } from "sequelize";
-import { parse } from "dotenv";
+import path from "path";
+import fs from "fs";
 
 //CREATE YEAR
 export const createYearWithMonths = async (req, res) => {
@@ -104,10 +105,7 @@ export const deleteYearWithMonths = async (req, res) => {
   }
 };
 
-
-
 //-------------------------------------------------------------------
-
 
 //CREATE MANUAL REQUEST
 export const createManualMonitoringRecord = async (req, res) => {
@@ -182,15 +180,21 @@ export const createManualMonitoringRecord = async (req, res) => {
     }
 
     // Parse and validate dates
-    const parsedDateRequested = dateRequested ? new Date(dateRequested) : new Date();
-    const parsedDateAccomplished = dateAccomplished ? new Date(dateAccomplished) : new Date();
+    const parsedDateRequested = dateRequested
+      ? new Date(dateRequested)
+      : new Date();
+    const parsedDateAccomplished = dateAccomplished
+      ? new Date(dateAccomplished)
+      : new Date();
 
     if (isNaN(parsedDateRequested.getTime())) {
       return res.status(400).json({ message: "Invalid dateRequested format" });
     }
 
     if (isNaN(parsedDateAccomplished.getTime())) {
-      return res.status(400).json({ message: "Invalid dateAccomplished format" });
+      return res
+        .status(400)
+        .json({ message: "Invalid dateAccomplished format" });
     }
 
     // Create the monitoring record with manual timestamps
@@ -213,15 +217,11 @@ export const createManualMonitoringRecord = async (req, res) => {
       message: "Monitoring record created successfully",
       monitoring: newMonitoring,
     });
-
   } catch (error) {
     console.error("Error creating manual monitoring record:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
-
 
 //CREATE REQUEST ✅
 export const createMonitoringAutoMonth = async (req, res) => {
@@ -344,7 +344,7 @@ export const getAllSoftMonitoring = async (req, res) => {
       limit,
       offset,
       order: [["createdAt", "DESC"]],
-      paranoid: false
+      paranoid: false,
     });
     res.status(200).json({
       data: monitoring.rows,
@@ -357,20 +357,51 @@ export const getAllSoftMonitoring = async (req, res) => {
   }
 };
 
-
-// Update specific column including createdAt and updatedAt manually
+// UPDATED REQUEST ✅
 export const editMonitoring = async (req, res) => {
-  const { id } = req.params;
-  const {
-    status,
-    repairDone,
-    serviceby,
-    controlno,
-    createdAt,
-    updatedAt
-  } = req.body;
-
   try {
+  const fileupload = await Monitoring.findOne({ where: { id: req.params.id } });
+  if (!fileupload) {
+    return res.status(404).json({ msg: "Request Not Found" });
+  }
+  let filename = fileupload.fileUrl;
+
+  if (req.files && req.files.file) {
+    const file = req.files.file;
+    const fileSize = file.size;
+    const ext = path.extname(file.name).toLowerCase();
+    const allowType = [".doc", ".docx", ".pdf"];
+
+    if (!allowType.includes(ext)){
+      return res.status(422).json({ msg: "Invalid File Format" });
+    }
+    if (fileSize > 10_000_000) {
+      return res.status(422).json({ msg: "Files must be less than 10MB" });
+    }
+
+    filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+
+    const oldPath = `./public/files/${fileupload.fileUrl}`;
+    if (fs.existsSync(oldPath) && fileupload.fileUrl) {
+      try {
+        fs.unlinkSync(oldPath);
+      } catch (err) {
+        console.error("Error deleting old file:", err);
+      }
+    }
+
+    try {
+      await file.mv(`./public/files/${filename}`);
+    } catch (err) {
+      console.error("File upload error:", err);
+      return res.status(500).json({ msg: "Failed to upload Files" });
+    }
+  }
+
+  const { id } = req.params;
+  const { status, repairDone, serviceby, controlno, createdAt, updatedAt } =
+    req.body;
+
     const monitoring = await Monitoring.findByPk(id);
 
     if (!monitoring) {
@@ -382,9 +413,10 @@ export const editMonitoring = async (req, res) => {
       repairDone,
       serviceby,
       controlno,
+      fileUrl: filename,
       // Safely convert string to Date only if provided
       ...(createdAt && { createdAt: new Date(createdAt) }),
-      ...(updatedAt && { updatedAt: new Date(updatedAt) })
+      ...(updatedAt && { updatedAt: new Date(updatedAt) }),
     });
 
     res.status(200).json({ message: "Monitoring record updated successfully" });
@@ -393,7 +425,6 @@ export const editMonitoring = async (req, res) => {
     res.status(500).json({ message: "Server error during update" });
   }
 };
-
 
 //SOFT DELETE
 export const softdeleteMonitoring = async (req, res) => {
@@ -419,4 +450,3 @@ export const softdeleteMonitoring = async (req, res) => {
     res.status(500).json({ message: "Error soft-deleting record", error });
   }
 };
-

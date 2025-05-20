@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer, toast, Bounce } from "react-toastify";
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil, FileType } from "lucide-react";
 import axios from "axios";
 import Swal from "sweetalert2";
 
 const RequestPanel = () => {
   const [monitoring, setMonitoring] = useState([]);
   const [isEditRequestModalOpen, setIsEditRequestModalOpen] = useState(false);
-  const [newRequest, setNewRequest] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [editStatus, setEditStatus] = useState("");
   const [editRepairDone, setEditRepairDone] = useState("");
@@ -16,10 +15,8 @@ const RequestPanel = () => {
   const [editControlNo, setEditControlNo] = useState("");
   const [editCreatedAt, setEditCreatedAt] = useState("");
   const [editUpdatedAt, setEditUpdatedAt] = useState("");
-
+  const [editFile, setEditFile] = useState(null);
   const [personnel, setPersonnel] = useState([]);
-
-  //---FILTER---
   const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
@@ -27,55 +24,74 @@ const RequestPanel = () => {
     fetchPersonnel();
   }, []);
 
-  //------------FETCH REQUEST------------
   const fetchMonitoring = async () => {
     try {
       const limit = 100;
       const offset = 0;
-
-      const res = await axios.get(
-        "http://localhost:5000/api/year/get-all-request",
-        {
-          params: { limit, offset },
-        }
-      );
-
+      const res = await axios.get("http://localhost:5000/api/year/get-all-request", {
+        params: { limit, offset },
+      });
       setMonitoring(
-        res.data.data.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        )
+        res.data.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       );
     } catch (error) {
-      console.error("Error Fetching Request:", error);
+      console.error("Error fetching requests:", error);
+      toast.error("Failed to fetch requests");
     }
   };
 
-  //------------UPDATE REQUEST------------
+  const fetchPersonnel = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/personnel/get");
+      setPersonnel(res.data);
+    } catch (error) {
+      console.error("Error fetching personnel:", error);
+      toast.error("Failed to fetch personnel");
+    }
+  };
+
   const handleEditRequest = async (e) => {
     e.preventDefault();
+
+    // Validate file type and size on frontend
+    if (editFile) {
+      const allowType = [".doc", ".docx", ".pdf"];
+      const ext = editFile.name.split(".").pop().toLowerCase();
+      if (!allowType.includes(`.${ext}`)) {
+        toast.error("Invalid file format. Only .doc, .docx, and .pdf are allowed.");
+        return;
+      }
+      if (editFile.size > 10_000_000) {
+        toast.error("File must be less than 10MB");
+        return;
+      }
+    }
+
+    const formData = new FormData();
+    formData.append("controlno", editControlNo);
+    formData.append("status", editStatus);
+    formData.append("repairDone", editRepairDone);
+    formData.append("serviceby", editServiceBy);
+    formData.append("createdAt", new Date(editCreatedAt).toISOString());
+    formData.append("updatedAt", new Date(editUpdatedAt).toISOString());
+    if (editFile) {
+      formData.append("file", editFile); // Match backend expectation
+    }
+
     try {
-      // Format dates for backend - ensure timezone is handled properly
-      const formattedCreatedAt = editCreatedAt ? new Date(editCreatedAt).toISOString() : null;
-      const formattedUpdatedAt = editUpdatedAt ? new Date(editUpdatedAt).toISOString() : null;
-      
       await axios.put(
         `http://localhost:5000/api/year/update-request/${selectedRequest}`,
+        formData,
         {
-          controlno: editControlNo,
-          status: editStatus,
-          repairDone: editRepairDone,
-          serviceby: editServiceBy,
-          createdAt: formattedCreatedAt,
-          updatedAt: formattedUpdatedAt,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
       );
 
-      //LOGS ACTION
-      await logAction("UPDATE", `Successfully Updated the Status of Request`);
-
+      await logAction("UPDATE", `Updated request with ID ${selectedRequest}`);
       fetchMonitoring();
       setIsEditRequestModalOpen(false);
-      setNewRequest("");
       toast.success(
         <div className="flex items-center gap-2">
           <Pencil className="text-green-600" />
@@ -93,18 +109,9 @@ const RequestPanel = () => {
           icon: false,
         }
       );
-    } catch (error) {
-      console.error("Error Updating Request:", error);
-    }
-  };
-
-  //------------FETCH IT PERSONNEL------------
-  const fetchPersonnel = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/personnel/get");
-      setPersonnel(res.data);
-    } catch (error) {
-      console.error("Error Fetching Personnels", error);
+    } catch (err) {
+      console.error("Error updating request:", err);
+      toast.error("Failed to update request");
     }
   };
 
@@ -120,13 +127,8 @@ const RequestPanel = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(
-            `http://localhost:5000/api/year/softdelete-request/${id}`
-          );
-
-          //LOGS ACTION
-          await logAction("DELETE", `Soft Deleted the Request`);
-
+          await axios.delete(`http://localhost:5000/api/year/softdelete-request/${id}`);
+          await logAction("DELETE", `Soft deleted request with ID ${id}`);
           fetchMonitoring();
           toast.error(
             <div className="flex items-center gap-2">
@@ -146,17 +148,16 @@ const RequestPanel = () => {
             }
           );
         } catch (error) {
-          console.error("Error deleting year:", error);
+          console.error("Error deleting request:", error);
+          toast.error("Failed to delete request");
         }
       }
     });
   };
 
-  //-----LOGS ACTION-----
   const logAction = async (action, details) => {
     const user = JSON.parse(localStorage.getItem("user"));
     const loggedInUser = user ? user.username : "Unknown User";
-
     try {
       await axios.post("http://localhost:5000/api/logs/create", {
         action,
@@ -164,25 +165,20 @@ const RequestPanel = () => {
         user: loggedInUser,
       });
     } catch (error) {
-      console.error("failed to Logs Action", error);
+      console.error("Failed to log action:", error);
     }
   };
 
-  // Helper function to format date to datetime-local input format
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
     try {
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) return ""; // Invalid date
-      
-      // Adjust for timezone to ensure local time is preserved
+      if (isNaN(date.getTime())) return "";
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      
-      // Format as YYYY-MM-DDThh:mm (datetime-local format)
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     } catch (error) {
       console.error("Error formatting date:", error);
@@ -191,7 +187,7 @@ const RequestPanel = () => {
   };
 
   return (
-    <div className="select-none ">
+    <div className="select-none">
       <ToastContainer />
       <div className="bg-slate-50 p-6 rounded-xl shadow-md text-center">
         <h1 className="text-2xl font-semibold font-montserrat mb-10">
@@ -219,6 +215,7 @@ const RequestPanel = () => {
                 <th className="border py-2 px-4">Requested By</th>
                 <th className="border py-2 px-4">Repair Done</th>
                 <th className="border py-2 px-4">Service By</th>
+                <th className="border py-2 px-4">File</th>
                 <th className="border py-2 px-4">Date Requested</th>
                 <th className="border py-2 px-4">Date Accomplished</th>
                 <th className="border py-2 px-4">Status</th>
@@ -227,9 +224,7 @@ const RequestPanel = () => {
             </thead>
             <tbody className="font-montserrat">
               {monitoring
-                .filter((item) =>
-                  statusFilter ? item.status === statusFilter : true
-                )
+                .filter((item) => (statusFilter ? item.status === statusFilter : true))
                 .map((item) => (
                   <tr
                     key={item.id}
@@ -241,13 +236,26 @@ const RequestPanel = () => {
                     <td className="px-2 py-1">{item.requestedby}</td>
                     <td className="px-2 py-1">{item.repairDone}</td>
                     <td className="px-2 py-1">{item.serviceby}</td>
+                    <td className="px-2 py-1">
+                      {item.fileUrl ? (
+                        <a
+                          href={`http://localhost:5000/files/${item.fileUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 flex gap-2 items-center bg-blue-100 p-1 rounded-xl hover:text-blue-800 hover:bg-blue-300 hover:animate-pulse transition duration-300"
+                        >
+                          <FileType size={16}/>View File
+                        </a>
+                      ) : (
+                        "No File"
+                      )}
+                    </td>
                     <td className="px-2 py-1 whitespace-nowrap">
                       {new Date(item.createdAt).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "long",
                         day: "2-digit",
                       })}
-
                       <br />
                       <span className="text-xs text-gray-500">
                         {new Date(item.createdAt).toLocaleTimeString("en-US", {
@@ -275,13 +283,13 @@ const RequestPanel = () => {
                     <td className="px-2 py-1">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium
-                ${
-                  item.status === "Pending"
-                    ? "bg-red-100 text-red-600"
-                    : item.status === "In Progress"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-green-100 text-green-700"
-                }`}
+                          ${
+                            item.status === "Pending"
+                              ? "bg-red-100 text-red-600"
+                              : item.status === "In Progress"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-green-100 text-green-700"
+                          }`}
                       >
                         {item.status}
                       </span>
@@ -296,6 +304,7 @@ const RequestPanel = () => {
                           setEditServiceBy(item.serviceby || "");
                           setEditCreatedAt(formatDateForInput(item.createdAt));
                           setEditUpdatedAt(formatDateForInput(item.updatedAt));
+                          setEditFile(null); // Reset file input
                           setIsEditRequestModalOpen(true);
                         }}
                         className="text-blue-600 hover:text-blue-800"
@@ -331,6 +340,7 @@ const RequestPanel = () => {
                   value={editControlNo}
                   onChange={(e) => setEditControlNo(e.target.value)}
                   className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  required
                 />
               </div>
               <div>
@@ -400,7 +410,16 @@ const RequestPanel = () => {
                   required
                 />
               </div>
-
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  File Upload (doc, docx, pdf; max 10MB)
+                </label>
+                <input
+                  type="file"
+                  accept=".doc,.docx,.pdf"
+                  onChange={(e) => setEditFile(e.target.files[0])}
+                />
+              </div>
               <div className="flex justify-end gap-3">
                 <button
                   type="button"

@@ -11,6 +11,7 @@ import groupRoutes from "./routes/WorkgroupRoute.js"
 import personnelRoutes from "./routes/ItpersonnelRoute.js"
 import UserRoute from "./routes/UserRoute.js"
 import logsRoutes from "./routes/LogsRoute.js"
+import path from "path";
 
 dotenv.config();
 
@@ -25,7 +26,7 @@ app.use(
   })
 );
 app.use(express.json());
-app.use("/files", express.static("public/"));
+app.use("/files", express.static(path.join(process.cwd(), "public/files")));
 app.use(fileUpload());
 
 app.use("/api/concern", ConcernRoute);

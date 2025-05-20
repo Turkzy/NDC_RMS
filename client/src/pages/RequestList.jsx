@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer, toast, Bounce } from "react-toastify";
-import { ArrowDownUp, Search } from "lucide-react";
+import { ArrowDownUp, Search, FileType } from "lucide-react";
 import axios from "axios";
 
 const RequestList = () => {
@@ -160,6 +160,7 @@ const RequestList = () => {
 
                 <th className="border py-2 px-4">Repair Done</th>
                 <th className="border py-2 px-4">Service By</th>
+                <th className="border py-2 px-4">File</th>
                 <th className="border py-2 px-4">Date Requested</th>
                 <th className="border py-2 px-4">Date Accomplished</th>
               </tr>
@@ -205,6 +206,20 @@ const RequestList = () => {
 
                     <td className="px-2 py-1">{item.repairDone}</td>
                     <td className="px-2 py-1">{item.serviceby}</td>
+                    <td className="px-2 py-1">
+                      {item.fileUrl ? (
+                        <a
+                          href={`http://localhost:5000/files/${item.fileUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 flex gap-2 items-center bg-blue-100 p-1 rounded-xl hover:text-blue-800 hover:bg-blue-300 hover:animate-pulse transition duration-300"
+                        >
+                          <FileType size={16}/>View File
+                        </a>
+                      ) : (
+                        "No File"
+                      )}
+                    </td>
                     <td className="px-2 py-1 whitespace-nowrap">
                       {new Date(item.createdAt).toLocaleDateString("en-US", {
                         year: "numeric",
