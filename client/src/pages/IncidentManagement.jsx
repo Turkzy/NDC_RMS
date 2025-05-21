@@ -44,7 +44,7 @@ const IncidentManagement = () => {
   //------------FETCH CONCERN------------
   const fetchConcerns = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/concern/get");
+      const res = await axios.get("http://192.168.1.3:5000/api/concern/get");
       setConcerns(res.data);
     } catch (error) {
       console.error("Error Fetching Concern:", error);
@@ -55,7 +55,7 @@ const IncidentManagement = () => {
   const handleAddConcern = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/concern/create", {
+      await axios.post("http://192.168.1.3:5000/api/concern/create", {
         concerns: newConcern,
       });
 
@@ -99,7 +99,7 @@ const IncidentManagement = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`http://localhost:5000/api/concern/delete/${id}`);
+          await axios.delete(`http://192.168.1.3:5000/api/concern/delete/${id}`);
 
           //LOGS ACTION
           await logAction("DELETE", `Deleted the Issue`);
@@ -134,7 +134,7 @@ const IncidentManagement = () => {
     e.preventDefault();
     try {
       await axios.put(
-        `http://localhost:5000/api/concern/update/${selectedConcern}`,
+        `http://192.168.1.3:5000/api/concern/update/${selectedConcern}`,
         {
           concerns: newConcern,
         }
@@ -190,7 +190,7 @@ const IncidentManagement = () => {
     const loggedInUser = user ? user.username : "Unknown User";
 
     try {
-      await axios.post("http://localhost:5000/api/logs/create", {
+      await axios.post("http://192.168.1.3:5000/api/logs/create", {
         action,
         details,
         user: loggedInUser,

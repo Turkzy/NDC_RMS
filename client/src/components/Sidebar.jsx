@@ -1,3 +1,4 @@
+// components/Sidebar.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import Logo from "../assets/NDC.png";
 
@@ -30,7 +31,8 @@ export function SidebarItem({
   icon,
   text,
   active,
-  alert,
+  notification, // Replaces 'alert'
+  notificationCount, // New prop for count
   onClick,
   dropdownIcon,
 }) {
@@ -50,8 +52,15 @@ export function SidebarItem({
 
       {dropdownIcon && <div className="ml-auto">{dropdownIcon}</div>}
 
-      {alert && (
-        <div className="absolute right-2 w-2 h-2 rounded bg-green-400"></div>
+      {notification && (
+        <div className="absolute right-2 flex items-center">
+          <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+          {notificationCount > 0 && (
+            <span className="ml-1 text-xs bg-red-500 text-white rounded-full px-1.5 py-0.5">
+              {notificationCount}
+            </span>
+          )}
+        </div>
       )}
     </li>
   );

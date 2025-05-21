@@ -52,7 +52,7 @@ const Manage = () => {
   const fetchMonthsForYear = async (yearId) => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/month/getByYear/${yearId}`
+        `http://192.168.1.3:5000/api/month/getByYear/${yearId}`
       );
       setMonthsForSelectedYear(res.data);
     } catch (error) {
@@ -75,7 +75,7 @@ const Manage = () => {
 
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/year/get-request/${monthId}`
+        `http://192.168.1.3:5000/api/year/get-request/${monthId}`
       );
 
       const data = res.data;
@@ -106,7 +106,7 @@ const Manage = () => {
   //------------FETCH YEARS------------
   const fetchYears = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/year/get-year");
+      const res = await axios.get("http://192.168.1.3:5000/api/year/get-year");
       setYears(res.data);
     } catch (error) {
       console.error("Error Fetching Year:", error);
@@ -117,7 +117,7 @@ const Manage = () => {
   const handleAddYear = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/year/create-year", {
+      await axios.post("http://192.168.1.3:5000/api/year/create-year", {
         year: newYear,
       });
 
@@ -158,7 +158,7 @@ const Manage = () => {
     e.preventDefault();
     try {
       await axios.put(
-        `http://localhost:5000/api/year/update-year/${selectedYear}`,
+        `http://192.168.1.3:5000/api/year/update-year/${selectedYear}`,
         {
           year: newYear,
         }
@@ -206,7 +206,7 @@ const Manage = () => {
       if (result.isConfirmed) {
         try {
           await axios.delete(
-            `http://localhost:5000/api/year/delete-year/${id}`
+            `http://192.168.1.3:5000/api/year/delete-year/${id}`
           );
 
           //LOGS ACTION
@@ -260,7 +260,7 @@ const Manage = () => {
     const loggedInUser = user ? user.username : "Unknown User";
 
     try {
-      await axios.post("http://localhost:5000/api/logs/create", {
+      await axios.post("http://192.168.1.3:5000/api/logs/create", {
         action,
         details,
         user: loggedInUser,

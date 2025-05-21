@@ -23,7 +23,7 @@ const Request = () => {
   //------------FETCH WORKGROUPS------------
   const fetchGroups = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/group/get");
+      const res = await axios.get("http://192.168.1.3:5000/api/group/get");
       setGroups(res.data);
     } catch (error) {
       Swal.fire({
@@ -38,7 +38,7 @@ const Request = () => {
   //------------FETCH CONCERN------------
   const fetchConcerns = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/concern/get");
+      const res = await axios.get("http://192.168.1.3:5000/api/concern/get");
       setConcerns(res.data);
     } catch (error) {
       Swal.fire({
@@ -73,7 +73,7 @@ const Request = () => {
       };
 
       await axios.post(
-        "http://localhost:5000/api/year/create-request",
+        "http://192.168.1.3:5000/api/year/create-request",
         requestData
       );
 

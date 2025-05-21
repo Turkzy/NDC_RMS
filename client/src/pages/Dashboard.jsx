@@ -27,12 +27,32 @@ import RequestList from "./RequestList.jsx";
 import LogsPanel from "./LogsPanel.jsx";
 import AccountPanel from "./AccountPanel.jsx";
 import AccountList from "./AccountList.jsx";
+import axios from "axios";
 
 const Dashboard = () => {
   const [activePanel, setActivePanel] = useState("dashboard");
   const [reportDropdownOpen, setReportDropdownOpen] = useState(false);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState(0);
   const navigate = useNavigate();
+
+  //Notifacation New Request
+  const fetchPendingRequests = async () => {
+    try {
+      const res = await axios.get(
+        "http://192.168.1.3:5000/api/year/get-all-request",
+        {
+          params: { limit: 100, offset: 0 },
+        }
+      );
+      const pendingCount = res.data.data.filter(
+        (request) => request.status === "Pending"
+      ).length;
+      setPendingRequests(pendingCount);
+    } catch (error) {
+      console.error("Error Fetching pending Request:", error);
+    }
+  };
 
   useEffect(() => {
     const checkTokenExpiration = () => {
@@ -55,10 +75,14 @@ const Dashboard = () => {
       }
     };
 
-    const tokenCheckInterval = setInterval(checkTokenExpiration, 600000);
+    // Fetch pending requests initially and every 10 seconds
+    fetchPendingRequests();
+    const interval = setInterval(fetchPendingRequests, 5000); // Poll every 10 seconds
     checkTokenExpiration();
+    const tokenCheckInterval = setInterval(checkTokenExpiration, 600000);
 
     return () => {
+      clearInterval(interval);
       clearInterval(tokenCheckInterval);
     };
   }, [navigate]);
@@ -83,6 +107,8 @@ const Dashboard = () => {
           text="Manage Request"
           active={activePanel === "managerequest"}
           onClick={() => setActivePanel("managerequest")}
+          notification={pendingRequests > 0}
+          notificationCount={pendingRequests}
         />
         <SidebarItem
           icon={<SquareChartGantt size={20} />}
@@ -179,7 +205,9 @@ const Dashboard = () => {
       </Sidebar>
       <div className="flex flex-col flex-1">
         <main className="flex-1 p-10 bg-slate-100 transition duration-300">
-          {activePanel === "dashboard" && <DashboardPanel setActivePanel={setActivePanel}/>}
+          {activePanel === "dashboard" && (
+            <DashboardPanel setActivePanel={setActivePanel} />
+          )}
           {activePanel === "request" && <RequestList />}
           {activePanel === "managerequest" && <RequestPanel />}
           {activePanel === "manage" && <Manage />}

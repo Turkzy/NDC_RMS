@@ -28,7 +28,7 @@ const RequestPanel = () => {
     try {
       const limit = 100;
       const offset = 0;
-      const res = await axios.get("http://localhost:5000/api/year/get-all-request", {
+      const res = await axios.get("http://192.168.1.3:5000/api/year/get-all-request", {
         params: { limit, offset },
       });
       setMonitoring(
@@ -42,7 +42,7 @@ const RequestPanel = () => {
 
   const fetchPersonnel = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/personnel/get");
+      const res = await axios.get("http://192.168.1.3:5000/api/personnel/get");
       setPersonnel(res.data);
     } catch (error) {
       console.error("Error fetching personnel:", error);
@@ -80,7 +80,7 @@ const RequestPanel = () => {
 
     try {
       await axios.put(
-        `http://localhost:5000/api/year/update-request/${selectedRequest}`,
+        `http://192.168.1.3:5000/api/year/update-request/${selectedRequest}`,
         formData,
         {
           headers: {
@@ -89,7 +89,7 @@ const RequestPanel = () => {
         }
       );
 
-      await logAction("UPDATE", `Updated request with ID ${selectedRequest}`);
+      await logAction("UPDATE", `Updated the Request`);
       fetchMonitoring();
       setIsEditRequestModalOpen(false);
       toast.success(
@@ -127,8 +127,8 @@ const RequestPanel = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`http://localhost:5000/api/year/softdelete-request/${id}`);
-          await logAction("DELETE", `Soft deleted request with ID ${id}`);
+          await axios.delete(`http://192.168.1.3:5000/api/year/softdelete-request/${id}`);
+          await logAction("DELETE", `Soft Deleted Request`);
           fetchMonitoring();
           toast.error(
             <div className="flex items-center gap-2">
@@ -159,7 +159,7 @@ const RequestPanel = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     const loggedInUser = user ? user.username : "Unknown User";
     try {
-      await axios.post("http://localhost:5000/api/logs/create", {
+      await axios.post("http://192.168.1.3:5000/api/logs/create", {
         action,
         details,
         user: loggedInUser,
@@ -239,7 +239,7 @@ const RequestPanel = () => {
                     <td className="px-2 py-1">
                       {item.fileUrl ? (
                         <a
-                          href={`http://localhost:5000/files/${item.fileUrl}`}
+                          href={`http://192.168.1.3:5000/files/${item.fileUrl}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-500 flex gap-2 items-center bg-blue-100 p-1 rounded-xl hover:text-blue-800 hover:bg-blue-300 hover:animate-pulse transition duration-300"

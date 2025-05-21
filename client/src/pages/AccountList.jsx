@@ -22,7 +22,7 @@ const AccountList = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/auth/all-users");
+      const res = await axios.get("http://192.168.1.3:5000/api/auth/all-users");
       setUsers(res.data.users || []);
     } catch (error) {
       console.error("Fetch failed:", error);
@@ -73,7 +73,7 @@ const AccountList = () => {
     }
 
     try {
-      await axios.post("http://localhost:5000/api/auth/add-user", {
+      await axios.post("http://192.168.1.3:5000/api/auth/add-user", {
         email,
         password,
         username,
@@ -174,7 +174,7 @@ const AccountList = () => {
 
     try {
       await axios.put(
-        `http://localhost:5000/api/auth/update-user/${editingUserId}`,
+        `http://192.168.1.3:5000/api/auth/update-user/${editingUserId}`,
         {
           email,
           password,
@@ -227,7 +227,7 @@ const AccountList = () => {
       if (result.isConfirmed) {
         try {
           await axios.delete(
-            `http://localhost:5000/api/auth/delete-user/${id}`
+            `http://192.168.1.3:5000/api/auth/delete-user/${id}`
           );
 
           //LOGS ACTION
@@ -264,7 +264,7 @@ const AccountList = () => {
     const loggedInUser = user ? user.username : "Unknown User";
 
     try {
-      await axios.post("http://localhost:5000/api/logs/create", {
+      await axios.post("http://192.168.1.3:5000/api/logs/create", {
         action,
         details,
         user: loggedInUser,

@@ -33,7 +33,7 @@ const Reports = () => {
   const fetchMonthsForYear = async (yearId) => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/month/getByYear/${yearId}`
+        `http://192.168.1.3:5000/api/month/getByYear/${yearId}`
       );
       setMonthsForSelectedYear(res.data);
     } catch (error) {
@@ -56,7 +56,7 @@ const Reports = () => {
 
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/year/get-request/${monthId}`
+        `http://192.168.1.3:5000/api/year/get-request/${monthId}`
       );
 
       const data = res.data;
@@ -87,7 +87,7 @@ const Reports = () => {
   //------------FETCH YEARS------------
   const fetchYears = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/year/get-year");
+      const res = await axios.get("http://192.168.1.3:5000/api/year/get-year");
       setYears(res.data);
     } catch (error) {
       console.error("Error Fetching Years:", error);
@@ -101,12 +101,17 @@ const Reports = () => {
         label: "Number of Issues",
         data: Object.values(issueCounts),
         backgroundColor: [
-          "#FF6384",
-          "#36A2EB",
-          "#FFCE56",
-          "#4BC0C0",
-          "#9966FF",
-          "#FF9F40",
+          "#FF6384", // red-pink
+          "#36A2EB", // blue
+          "#FFCE56", // yellow
+          "#4BC0C0", // teal
+          "#9966FF", // purple
+          "#FF9F40", // orange
+          "#00A86B", // jade green
+          "#8A2BE2", // blue violet
+          "#FFD700", // gold
+          "#DC143C", // crimson
+          "#FF69B4", // hot pink
         ],
       },
     ],
@@ -271,8 +276,8 @@ const Reports = () => {
       if (prev.includes(row)) {
         return prev.filter((r) => r !== row);
       } else {
-        if (prev.length >= 4) {
-          alert("You can only select up to 4 rows for printing.");
+        if (prev.length >= 6) {
+          alert("You can only select up to 6 rows for printing.");
           return prev;
         }
         return [...prev, row];
@@ -474,7 +479,7 @@ const Reports = () => {
                               onChange={() => toggleRowSelection(item)}
                               disabled={
                                 !selectedRows.includes(item) &&
-                                selectedRows.length >= 4
+                                selectedRows.length >= 6
                               }
                             />
                           </td>
