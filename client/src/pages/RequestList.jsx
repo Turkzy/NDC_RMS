@@ -42,7 +42,7 @@ const RequestList = () => {
       const offset = 0;
 
       const res = await axios.get(
-        "http://192.168.1.3:5000/api/year/get-all-softrequest",
+        "http://localhost:5000/api/year/get-all-softrequest",
         {
           params: { limit, offset },
         }
@@ -61,7 +61,7 @@ const RequestList = () => {
   //------------FETCH IT PERSONNEL------------
   const fetchPersonnel = async () => {
     try {
-      const res = await axios.get("http://192.168.1.3:5000/api/personnel/get");
+      const res = await axios.get("http://localhost:5000/api/personnel/get");
       setPersonnel(res.data);
     } catch (error) {
       console.error("Error Fetching Personnels", error);
@@ -209,7 +209,7 @@ const RequestList = () => {
                     <td className="px-2 py-1">
                       {item.fileUrl ? (
                         <a
-                          href={`http://192.168.1.3:5000/files/${item.fileUrl}`}
+                          href={`http://localhost:5000/files/${item.fileUrl}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-500 flex gap-2 items-center bg-blue-100 p-1 rounded-xl hover:text-blue-800 hover:bg-blue-300 hover:animate-pulse transition duration-300"

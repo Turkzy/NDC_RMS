@@ -46,7 +46,7 @@ const Itpersonnel = () => {
   //------------FETCH IT PERSONNEL------------
   const fetchPersonnel = async () => {
     try {
-      const res = await axios.get("http://192.168.1.3:5000/api/personnel/get");
+      const res = await axios.get("http://localhost:5000/api/personnel/get");
       setPersonnel(res.data);
     } catch (error) {
       console.error("Error Fetching Personnels", error);
@@ -57,7 +57,7 @@ const Itpersonnel = () => {
   const handleAddPersonnel = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://192.168.1.3:5000/api/personnel/create", {
+      await axios.post("http://localhost:5000/api/personnel/create", {
         personnels: newPersonnel,
       });
 
@@ -94,7 +94,7 @@ const Itpersonnel = () => {
     e.preventDefault();
     try {
       await axios.put(
-        `http://192.168.1.3:5000/api/personnel/update/${selectedPersonnel}`,
+        `http://localhost:5000/api/personnel/update/${selectedPersonnel}`,
         {
           personnels: newPersonnel,
         }
@@ -142,7 +142,7 @@ const Itpersonnel = () => {
       if (result.isConfirmed) {
         try {
           await axios.delete(
-            `http://192.168.1.3:5000/api/personnel/delete/${id}`
+            `http://localhost:5000/api/personnel/delete/${id}`
           );
 
           //LOGS ACTION
@@ -196,7 +196,7 @@ const Itpersonnel = () => {
     const loggedInUser = user ? user.username : "Unknown User";
 
     try {
-      await axios.post("http://192.168.1.3:5000/api/logs/create", {
+      await axios.post("http://localhost:5000/api/logs/create", {
         action,
         details,
         user: loggedInUser,

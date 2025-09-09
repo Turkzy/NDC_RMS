@@ -33,7 +33,7 @@ const DataEntry = () => {
     const fetchYears = async () => {
       try {
         const response = await axios.get(
-          "http://192.168.1.3:5000/api/year/get-year"
+          "http://localhost:5000/api/year/get-year"
         );
         setYears(response.data);
 
@@ -216,7 +216,7 @@ const DataEntry = () => {
 
           try {
             await axios.post(
-              "http://192.168.1.3:5000/api/year/create-manual-request",
+              "http://localhost:5000/api/year/create-manual-request",
               payload
             );
             successCount++;
@@ -273,7 +273,7 @@ const DataEntry = () => {
   //------------FETCH WORKGROUPS------------
   const fetchGroups = async () => {
     try {
-      const res = await axios.get("http://192.168.1.3:5000/api/group/get");
+      const res = await axios.get("http://localhost:5000/api/group/get");
       setGroups(res.data);
     } catch (error) {
       console.error("Error Fetching Workgroup", error);
@@ -283,7 +283,7 @@ const DataEntry = () => {
   //------------FETCH ISSUE------------
   const fetchConcerns = async () => {
     try {
-      const res = await axios.get("http://192.168.1.3:5000/api/concern/get");
+      const res = await axios.get("http://localhost:5000/api/concern/get");
       setConcerns(res.data);
     } catch (error) {
       console.error("Error Fetching Issues", error);
@@ -293,7 +293,7 @@ const DataEntry = () => {
   //------------FETCH IT PERSONNEL------------
   const fetchPersonnel = async () => {
     try {
-      const res = await axios.get("http://192.168.1.3:5000/api/personnel/get");
+      const res = await axios.get("http://localhost:5000/api/personnel/get");
       setPersonnel(res.data);
     } catch (error) {
       console.error("Error Fetching Personnels", error);
@@ -306,7 +306,7 @@ const DataEntry = () => {
     const loggedInUser = user ? user.username : "Unknown User";
 
     try {
-      await axios.post("http://192.168.1.3:5000/api/logs/create", {
+      await axios.post("http://localhost:5000/api/logs/create", {
         action,
         details,
         user: loggedInUser,

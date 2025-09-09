@@ -58,7 +58,7 @@ const AccountPanel = () => {
       if (userData && userData.email) {
         // Find the user by email to get complete profile
         const res = await axios.get(
-          "http://192.168.1.3:5000/api/auth/all-users",
+          "http://localhost:5000/api/auth/all-users",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -104,7 +104,7 @@ const AccountPanel = () => {
       const token = localStorage.getItem("token");
 
       await axios.put(
-        `http://192.168.1.3:5000/api/auth/update-user/${userId}`,
+        `http://localhost:5000/api/auth/update-user/${userId}`,
         {
           username,
           firstname,
@@ -166,7 +166,7 @@ const AccountPanel = () => {
     const loggedInUser = user ? user.username : "Unknown User";
 
     try {
-      await axios.post("http://192.168.1.3:5000/api/logs/create", {
+      await axios.post("http://localhost:5000/api/logs/create", {
         action,
         details,
         user: loggedInUser,

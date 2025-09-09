@@ -22,7 +22,7 @@ const DashboardPanel = ({ setActivePanel }) => {
   useEffect(() => {
     const fetchYears = async () => {
       try {
-        const res = await axios.get("http://192.168.1.3:5000/api/year/get-year");
+        const res = await axios.get("http://localhost:5000/api/year/get-year");
         const years = res.data;
         setAvailableYears(years);
 
@@ -55,7 +55,7 @@ const DashboardPanel = ({ setActivePanel }) => {
 
     try {
       const monthsRes = await axios.get(
-        `http://192.168.1.3:5000/api/month/getByYear/${yearId}`
+        `http://localhost:5000/api/month/getByYear/${yearId}`
       );
       const months = monthsRes.data;
 
@@ -64,7 +64,7 @@ const DashboardPanel = ({ setActivePanel }) => {
 
       for (const month of months) {
         const res = await axios.get(
-          `http://192.168.1.3:5000/api/year/get-request/${month.id}`
+          `http://localhost:5000/api/year/get-request/${month.id}`
         );
         const data = res.data;
         combinedData.push(...data);
@@ -88,7 +88,7 @@ const DashboardPanel = ({ setActivePanel }) => {
       const limit = 100;
       const offset = 0;
   
-      const res = await axios.get("http://192.168.1.3:5000/api/year/get-all-softrequest", {
+      const res = await axios.get("http://localhost:5000/api/year/get-all-softrequest", {
         params: { limit, offset },
       });
   

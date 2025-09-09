@@ -40,7 +40,7 @@ const Dashboard = () => {
   const fetchPendingRequests = async () => {
     try {
       const res = await axios.get(
-        "http://192.168.1.3:5000/api/year/get-all-request",
+        "http://localhost:5000/api/year/get-all-request",
         {
           params: { limit: 100, offset: 0 },
         }

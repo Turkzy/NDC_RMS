@@ -16,7 +16,7 @@ const LogsPanel = () => {
   //------------FETCH LOGS------------
   const fetchLogs = async () => {
     try {
-      const res = await axios.get("http://192.168.1.3:5000/api/logs/get");
+      const res = await axios.get("http://localhost:5000/api/logs/get");
       setLogs(res.data);
     } catch (error) {
       console.error("Error Fetching Logs:", error);

@@ -33,7 +33,7 @@ const Reports = () => {
   const fetchMonthsForYear = async (yearId) => {
     try {
       const res = await axios.get(
-        `http://192.168.1.3:5000/api/month/getByYear/${yearId}`
+        `http://localhost:5000/api/month/getByYear/${yearId}`
       );
       setMonthsForSelectedYear(res.data);
     } catch (error) {
@@ -56,7 +56,7 @@ const Reports = () => {
 
     try {
       const res = await axios.get(
-        `http://192.168.1.3:5000/api/year/get-request/${monthId}`
+        `http://localhost:5000/api/year/get-request/${monthId}`
       );
 
       const data = res.data;
@@ -87,7 +87,7 @@ const Reports = () => {
   //------------FETCH YEARS------------
   const fetchYears = async () => {
     try {
-      const res = await axios.get("http://192.168.1.3:5000/api/year/get-year");
+      const res = await axios.get("http://localhost:5000/api/year/get-year");
       setYears(res.data);
     } catch (error) {
       console.error("Error Fetching Years:", error);

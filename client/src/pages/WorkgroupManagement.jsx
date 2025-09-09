@@ -43,7 +43,7 @@ const WorkgroupManagement = () => {
   //------------FETCH WORKGROUPS------------
   const fetchGroups = async () => {
     try {
-      const res = await axios.get("http://192.168.1.3:5000/api/group/get");
+      const res = await axios.get("http://localhost:5000/api/group/get");
       setGroups(res.data);
     } catch (error) {
       console.error("Error Fetching WorkGroup", error);
@@ -54,7 +54,7 @@ const WorkgroupManagement = () => {
   const handleAddGroup = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://192.168.1.3:5000/api/group/create", {
+      await axios.post("http://localhost:5000/api/group/create", {
         workgroups: newGroup,
       });
 
@@ -99,7 +99,7 @@ const WorkgroupManagement = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`http://192.168.1.3:5000/api/group/delete/${id}`);
+          await axios.delete(`http://localhost:5000/api/group/delete/${id}`);
 
           //LOGS ACTION
           await logAction("DELETE", `Deleted the Workgroup`);
@@ -134,7 +134,7 @@ const WorkgroupManagement = () => {
     e.preventDefault();
     try {
       await axios.put(
-        `http://192.168.1.3:5000/api/group/update/${selectedGroups}`,
+        `http://localhost:5000/api/group/update/${selectedGroups}`,
         {
           workgroups: newGroup,
         }
@@ -191,7 +191,7 @@ const WorkgroupManagement = () => {
     const loggedInUser = user ? user.username : "Unknown User";
 
     try {
-      await axios.post("http://192.168.1.3:5000/api/logs/create", {
+      await axios.post("http://localhost:5000/api/logs/create", {
         action,
         details,
         user: loggedInUser,
