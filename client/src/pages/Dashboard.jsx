@@ -219,7 +219,7 @@ const Dashboard = () => {
           {activePanel === "users-account" && <AccountList />}
         </main>
         <footer className="text-center text-black hover:text-green-600 transition duration-300 bg-white">
-          <a href="https://turzkyportfolio.netlify.app/">
+          <a href="https://johnalbertsison.vercel.app/">
             ©2025 Developed by TurkzyDev
           </a>
         </footer>

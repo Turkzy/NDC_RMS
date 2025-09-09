@@ -5,7 +5,7 @@
     workgroup: { type: DataTypes.STRING, allowNull: false },
     requestedby: { type: DataTypes.STRING, allowNull: false },
     issue: { type: DataTypes.STRING, allowNull: false },
-    controlno: { type: DataTypes.STRING, allowNull: false },
+    controlno: { type: DataTypes.STRING, allowNull: true },
     serviceby: { type: DataTypes.STRING, allowNull: true},
     status: {
       type: DataTypes.STRING,

@@ -224,6 +224,7 @@ export const createManualMonitoringRecord = async (req, res) => {
 };
 
 //CREATE REQUEST ✅
+//CREATE REQUEST ✅
 export const createMonitoringAutoMonth = async (req, res) => {
   try {
     const currentDate = new Date();
@@ -252,34 +253,15 @@ export const createMonitoringAutoMonth = async (req, res) => {
       });
     }
 
-    // Generate a control number like 2025-109
-    const latest = await Monitoring.findOne({
-      where: {
-        controlno: {
-          [Op.like]: `${currentYear}-%`,
-        },
-      },
-      order: [["createdAt", "DESC"]],
-      paranoid: true,
-    });
-
-    let nextNo = 109;
-    if (latest) {
-      const last = parseInt(latest.controlno.split("-")[1]);
-      nextNo = last + 1;
-    }
-
-    const controlno = `${currentYear}-${nextNo}`;
-
-    // Example: extract from req.body if needed
-    const { workgroup, requestedby, issue } = req.body;
-
+    // Extract from req.body - including optional controlno
+    const { workgroup, requestedby, issue, controlno } = req.body;
+remote
     const now = new Date();
     const newMonitoring = await Monitoring.create({
       workgroup,
       requestedby,
       issue,
-      controlno,
+      controlno: controlno || null, // Use provided controlno or set to null if blank/undefined
       monthId: month.id,
       createdAt: now,
       updatedAt: now,

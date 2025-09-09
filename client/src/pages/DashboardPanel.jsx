@@ -191,7 +191,7 @@ const DashboardPanel = ({ setActivePanel }) => {
       
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div  onClick={() => setActivePanel("managerequest")} className="bg-gray-200 text-gray-700 cursor-pointer p-4 rounded-lg shadow-sm border flex items-center justify-between">
+        <div  onClick={() => setActivePanel("request")} className="bg-gray-200 text-gray-700 cursor-pointer p-4 rounded-lg shadow-sm border flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold font-montserrat">
               Total Request
