@@ -4,14 +4,9 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import fileUpload from "express-fileupload";
 import db from "./config/database.js";
-import ConcernRoute from "./routes/ConcernRoute.js";
-import yearRoute from "./routes/YearRoute.js"
-import monthRoutes from "./routes/MonthRoute.js"
-import groupRoutes from "./routes/WorkgroupRoute.js"
-import personnelRoutes from "./routes/ItpersonnelRoute.js"
-import UserRoute from "./routes/UserRoute.js"
-import logsRoutes from "./routes/LogsRoute.js"
 import path from "path";
+
+import UserRoutes from "./routes/UserRoute.js";
 
 dotenv.config();
 
@@ -29,13 +24,7 @@ app.use(express.json());
 app.use("/files", express.static(path.join(process.cwd(), "public/files")));
 app.use(fileUpload());
 
-app.use("/api/concern", ConcernRoute);
-app.use("/api/year", yearRoute)
-app.use("/api/personnel", personnelRoutes)
-app.use("/api/month", monthRoutes);
-app.use("/api/group", groupRoutes);
-app.use("/api/auth", UserRoute)
-app.use("/api/logs", logsRoutes)
+app.use("/api/user", UserRoutes);
 
 try {
   await db.authenticate();
@@ -46,4 +35,4 @@ try {
 }
 
 const PORT = process.env.PORT;
-app.listen(PORT, '0.0.0.0',() => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0",() => console.log(`Server running on port ${PORT}`));

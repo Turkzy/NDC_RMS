@@ -7,6 +7,6 @@ export default defineConfig({
   build: {
     outDir: 'build', // default is 'dist'
   },
-  base: '/Request/',
+  base: '/NDC_RMS/',
   
 })

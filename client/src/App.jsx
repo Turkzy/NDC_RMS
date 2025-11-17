@@ -24,7 +24,7 @@ const App = () => {
 
   return (
     <>
-      <BrowserRouter basename="/Request">
+      <BrowserRouter basename="/NDC_RMS">
         <Routes>
           <Route path="/" element={<Request/>}/>
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard/>}/>}/> 
