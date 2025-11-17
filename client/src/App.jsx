@@ -63,7 +63,7 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <BrowserRouter basename="/NDC_RMS">
+    <BrowserRouter basename="/NDC_RMS/">
       <AppContent />
     </BrowserRouter>
   )

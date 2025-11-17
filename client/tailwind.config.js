@@ -1,18 +1,11 @@
 /** @type {import('tailwindcss').Config} */
-export default {
-  darkMode: 'class',
+module.exports = {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "./public/index.html",
   ],
   theme: {
-    extend: {
-      fontFamily: {
-        montserrat: ['Montserrat', 'sans-serif'],
-        arial: ['Arial', 'sans-serif'],
-      },
-    },
+    extend: {},
   },
   plugins: [],
 }
-
