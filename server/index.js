@@ -8,6 +8,7 @@ import path from "path";
 
 //IMPORT FOR EACH ROUTES
 import UserRoutes from "./routes/UserRoutes.js";
+import ConcernRoutes from "./routes/ConcernRoutes.js";
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use("/files", express.static(path.join(process.cwd(), "public/files")));
 app.use(fileUpload());
 
 app.use("/api/user", UserRoutes);
+app.use("/api/concerns", ConcernRoutes);
 
 try {
   await db.authenticate();
@@ -35,5 +37,5 @@ try {
   console.error("❌ DB connection error:", err);
 }
 
-const PORT = process.env.PORT;
-app.listen(PORT, "0.0.0.0",() => console.log(`Server running on port ${PORT}`));
+const PORT = process.env.PORT || 5002;
+app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));

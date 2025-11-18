@@ -1,115 +1,179 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar, { SidebarItem } from "./Sidebar.jsx";
 import {
-  LayoutDashboard,
-  ClipboardPenLine,
   ClipboardClock,
   FileCheck,
-  FileText,
   UserCog,
   LogOut,
   ChevronRight,
 } from "lucide-react";
+import { RiDashboardLine } from "react-icons/ri";
+import {
+  LuFileCog,
+  LuFileChartPie,
+  LuCalendarDays,
+  LuCalendarRange,
+} from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
+
+// COMPONENTS
+import Header from "./Header.jsx";
+
+// PAGES
+import DashboardPage from "../pages/Dashboard.jsx";
+import PendingConcern from "../pages/Concerns/PendingConcern.jsx";
+import ResolvedConcern from "../pages/Concerns/ResolvedConcern.jsx";
 
 const Dashboard = () => {
-  const [activePanel, setActivePanel] = useState(null);
-  const navigate = useNavigate(); // ✅ FIX
+  const [activePanel, setActivePanel] = useState("dashboard");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const isNavigatingRef = useRef(false);
+  const navigate = useNavigate();
 
- // Inside Dashboard.jsx
-const handleLogout = () => {
-    // Clear all auth-related data
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("lastLoginTime");
-    localStorage.removeItem("rememberedEmail"); // optional: clear remembered email on logout
-  
-    // Force update auth state across tabs
-    window.dispatchEvent(new Event("storage"));
-  
-    // Redirect to login
-    navigate("/", { replace: true });
+  useEffect(() => {
+    if (isNavigatingRef.current) return;
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
+
+    if (!user || !token) {
+      isNavigatingRef.current = true;
+      navigate("/", { replace: true });
+      return;
+    }
+
+    try {
+      const decoded = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+
+      if (decoded.exp && decoded.exp < currentTime) {
+        isNavigatingRef.current = true;
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/", { replace: true });
+        return;
+      }
+    } catch (error) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      isNavigatingRef.current = true;
+      navigate("/", { replace: true });
+      return;
+    }
+  }, [navigate]);
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const accessibleTabs = () => {
+    return {
+      dashboard: true,
+      pendingconcern: true,
+      resolvedconcern: true,
+      monthlyreport: true,
+      yearlyreport: true,
+      account: true,
+      logout: true,
+    };
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar>
+    <div className="flex flex-col min-h-screen bg-slate-100">
+      {/* Header - Full Width at Top */}
+      <Header
+        onMenuClick={toggleSidebar}
+        isSidebarCollapsed={isSidebarCollapsed}
+      />
 
-        {/* Dashboard */}
-        <SidebarItem
-          icon={<LayoutDashboard size={20} />}
-          text="Dashboard"
-          active={activePanel === "dashboard"}
-          onClick={() => setActivePanel("dashboard")}
-        />
-
-        {/* Manage Concerns */}
-        <SidebarItem
-          icon={<ClipboardPenLine size={20} />}
-          text="Manage Concerns"
-          active={activePanel === "pending" || activePanel === "resolved"}
-          expandable
-          itemId="manage_concerns"
-          dropdownIcon={<ChevronRight size={16} />}
-        >
+      {/* Sidebar and Content Area */}
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar}>
+          {/* Dashboard */}
+          {accessibleTabs().dashboard && (
+            <SidebarItem
+              icon={<RiDashboardLine size={20} />}
+              text="Dashboard"
+              active={activePanel === "dashboard"}
+              onClick={() => setActivePanel("dashboard")}
+            />
+          )}
+          {/* Manage Concerns */}
           <SidebarItem
-            icon={<ClipboardClock size={20} />}
-            text="Pending"
-            active={activePanel === "pending"}
-            onClick={() => setActivePanel("pending")}
-          />
+            icon={<LuFileCog size={20} />}
+            text="Manage Concerns"
+            active={
+              activePanel.startsWith("manage_concerns") ||
+              activePanel.startsWith("pending_concerns") ||
+              activePanel.startsWith("resolved_concerns")
+            }
+            expandable={true}
+            itemId="manage_concerns"
+            dropdownIcon={<ChevronRight size={16} />}
+          >
+            <SidebarItem
+              icon={<ClipboardClock size={20} />}
+              text="Pending"
+              active={activePanel === "pending"}
+              onClick={() => setActivePanel("pending")}
+            />
+            <SidebarItem
+              icon={<FileCheck size={20} />}
+              text="Resolved"
+              active={activePanel === "resolved"}
+              onClick={() => setActivePanel("resolved")}
+            />
+          </SidebarItem>
+
+          {/* Reports */}
           <SidebarItem
-            icon={<FileCheck size={20} />}
-            text="Resolved"
-            active={activePanel === "resolved"}
-            onClick={() => setActivePanel("resolved")}
-          />
-        </SidebarItem>
+            icon={<LuFileChartPie size={20} />}
+            text="Reports"
+            active={
+              activePanel.startsWith("reports") ||
+              activePanel.startsWith("monthly_report") ||
+              activePanel.startsWith("yearly_report")
+            }
+            expandable={true}
+            itemId="reports"
+            dropdownIcon={<ChevronRight size={16} />}
+          >
+            <SidebarItem
+              icon={<LuCalendarDays size={20} />}
+              text="Monthly Report"
+              active={activePanel === "monthly_report"}
+              onClick={() => setActivePanel("monthly_report")}
+            />
+            <SidebarItem
+              icon={<LuCalendarRange size={20} />}
+              text="Yearly Report"
+              active={activePanel === "yearly_report"}
+              onClick={() => setActivePanel("yearly_report")}
+            />
+          </SidebarItem>
+        </Sidebar>
 
-        {/* Reports */}
-        <SidebarItem
-          icon={<FileText size={20} />}
-          text="Reports"
-          active={activePanel === "monthly_report" || activePanel === "yearly_report"}
-          expandable
-          itemId="reports"
-          dropdownIcon={<ChevronRight size={16} />}
-        >
-          <SidebarItem
-            icon={<FileText size={20} />}
-            text="Monthly Report"
-            active={activePanel === "monthly_report"}
-            onClick={() => setActivePanel("monthly_report")}
-          />
-          <SidebarItem
-            icon={<FileText size={20} />}
-            text="Yearly Report"
-            active={activePanel === "yearly_report"}
-            onClick={() => setActivePanel("yearly_report")}
-          />
-        </SidebarItem>
-
-        {/* Account */}
-        <SidebarItem
-          icon={<UserCog size={20} />}
-          text="Account"
-          active={activePanel === "account"}
-          onClick={() => setActivePanel("account")}
-        />
-
-        {/* Logout (Now Working) */}
-        <SidebarItem
-          icon={<LogOut size={20} />}
-          text="Logout"
-          active={false}
-          onClick={handleLogout}
-        />
-
-      </Sidebar>
-
-      {/* Active Panel Display */}
-      <div className="flex-1 p-10 text-3xl font-bold">
-        {activePanel ? `You clicked: ${activePanel}` : "Select a tab"}
+        {/* Active Panel Display */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <main className="flex-1 p-4 transition duration-300 overflow-y-auto">
+            {activePanel === "dashboard" && <DashboardPage />}
+            {activePanel === "pending" && <PendingConcern />}
+            {activePanel === "resolved" && <ResolvedConcern />}
+            {activePanel === "monthly_report" && (
+              <div>Monthly Report Content</div>
+            )}
+            {activePanel === "yearly_report" && (
+              <div>Yearly Report Content</div>
+            )}
+            {activePanel === "account" && <div>Account Content</div>}
+          </main>
+          <footer className="text-center text-black hover:text-green-600 transition duration-300 bg-white">
+            <a href="https://johnalbertsison.vercel.app/">
+              ©2025 Developed by TurkzyDev
+            </a>
+          </footer>
+        </div>
       </div>
     </div>
   );

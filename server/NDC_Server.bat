@@ -1,7 +1,7 @@
 @echo off
-title NDC_CSG Server
+title RMS Server
 echo ========================================
-echo   Starting NDC_CSG Server...
+echo   Starting NDC_RMS Server...
 echo ========================================
 echo.
 

@@ -9,34 +9,27 @@ const Sidebar = ({ children, isCollapsed, onToggle }) => {
   const [expandedItems, setExpandedItems] = useState({});
 
   const toggleExpanded = (itemId) => {
-    setExpandedItems(prev => ({
+    setExpandedItems((prev) => ({
       ...prev,
-      [itemId]: !prev[itemId]
+      [itemId]: !prev[itemId],
     }));
   };
 
   const contextValue = {
     expandedItems,
     toggleExpanded,
-    isCollapsed
+    isCollapsed,
   };
 
   return (
-    <aside className={`sticky top-0 h-screen z-40 bg-white dark:bg-gray-800 select-none transition-all duration-300 ease-in-out ${
-      isCollapsed ? 'w-16' : 'w-64'
-    }`}>
-      <nav className="h-full flex flex-col border-r border-gray-200 dark:border-gray-700 shadow-xl">
-        <div className={`p-4 pb-2 flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
-          <img src={Logo} alt="logo" className={`${isCollapsed ? 'w-8' : 'w-16'} transition-all duration-300`} />
-          {!isCollapsed && (
-            <h1 className="text-md font-semibold ml-2 text-gray-700 dark:text-gray-200 font-montserrat transition-all duration-300">
-              Repair & Maintenance System
-            </h1>
-          )}
-        </div>
-
+    <aside
+      className={`sticky top-0 h-screen z-40 bg-white select-none transition-all duration-300 ease-in-out ${
+        isCollapsed ? "w-16" : "w-64"
+      }`}
+    >
+      <nav className="h-full flex flex-col border-r border-gray-200 shadow-xl">
         <SidebarContext.Provider value={contextValue}>
-          <ul className="flex-1 px-3">{children}</ul>
+          <ul className="flex-1 px-3 py-4">{children}</ul>
         </SidebarContext.Provider>
       </nav>
     </aside>
@@ -47,15 +40,16 @@ export function SidebarItem({
   icon,
   text,
   active,
-  notification, // Replaces 'alert'
-  notificationCount, // New prop for count
+  notification,
+  notificationCount, 
   onClick,
   dropdownIcon,
-  children, // For expandable content
-  expandable = false, // New prop to indicate if item is expandable
-  itemId, // Unique identifier for expandable items
+  children, 
+  expandable = false, 
+  itemId, 
 }) {
-  const { expandedItems, toggleExpanded, isCollapsed } = useContext(SidebarContext);
+  const { expandedItems, toggleExpanded, isCollapsed } =
+    useContext(SidebarContext);
   const isExpanded = expandedItems[itemId] || false;
 
   const handleClick = () => {
@@ -71,10 +65,12 @@ export function SidebarItem({
     <li className="my-1">
       <div
         onClick={handleClick}
-        className={`relative flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} h-10 py-2 px-3 font-medium rounded-md cursor-pointer transition-colors group ${
+        className={`relative flex items-center ${
+          isCollapsed ? "justify-center" : "justify-between"
+        } h-10 py-2 px-3 font-medium rounded-md cursor-pointer transition-colors group ${
           active
-            ? "bg-green-300 dark:bg-green-600 text-gray-600 dark:text-gray-200"
-            : "hover:bg-green-400 dark:hover:bg-green-700 text-gray-700 dark:text-gray-300"
+            ? "bg-green-100 text-gray-600 shadow-sm border-l-4 border-green-500"
+            : "hover:bg-green-200 text-gray-700"
         }`}
         title={isCollapsed ? text : undefined} // Show tooltip when collapsed
       >
@@ -86,9 +82,11 @@ export function SidebarItem({
         </div>
 
         {!isCollapsed && dropdownIcon && (
-          <div className={`ml-auto transition-transform duration-200 text-gray-600 dark:text-gray-300 ${
-            expandable && isExpanded ? 'rotate-180' : 'rotate-0'
-          }`}>
+          <div
+            className={`ml-auto transition-transform duration-200 text-gray-600 ${
+              expandable && isExpanded ? "rotate-180" : "rotate-0"
+            }`}
+          >
             {dropdownIcon}
           </div>
         )}
@@ -124,9 +122,7 @@ export function SidebarItem({
             isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          <ul className="ml-6 mt-1 space-y-1">
-            {children}
-          </ul>
+          <ul className="ml-6 mt-1 space-y-1">{children}</ul>
         </div>
       )}
     </li>
