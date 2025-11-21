@@ -58,6 +58,14 @@ const Concern = db.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    taggedEmails: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    taggedUserIds: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     createdAt: { 
       type: DataTypes.DATE, 
       allowNull: false 

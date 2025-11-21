@@ -9,6 +9,7 @@ import path from "path";
 //IMPORT FOR EACH ROUTES
 import UserRoutes from "./routes/UserRoutes.js";
 import ConcernRoutes from "./routes/ConcernRoutes.js";
+import RbacRoutes from "./routes/RbacRoutes.js";
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use("/files", express.static(path.join(process.cwd(), "public/files")));
 app.use(fileUpload());
 
 app.use("/api/user", UserRoutes);
+app.use("/api/rbac", RbacRoutes);
 app.use("/api/concerns", ConcernRoutes);
 
 try {

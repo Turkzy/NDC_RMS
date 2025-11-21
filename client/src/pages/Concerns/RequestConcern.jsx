@@ -81,6 +81,28 @@ const RequestConcern = () => {
               </div>
 
               <div className="space-y-2">
+                  <label
+                    htmlFor="location"
+                    className="text-sm font-semibold text-slate-700"
+                  >
+                    Maintenance Type
+                  </label>
+                  <select
+                    id="maintenanceType"
+                    name="maintenanceType"
+                    className="w-full rounded-2xl border text-slate-500 border-slate-200 bg-white px-4 py-3 shadow-sm focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 transition"
+                  >
+                    <option value="">--Please choose an option--</option>
+                    <option value="1">Electrical</option>
+                    <option value="2">Mechanical</option>
+                    <option value="3">Carpentry</option>
+                    <option value="4">Painting</option>
+                    <option value="5">Plumbing</option>
+                    <option value="6">Other</option>
+                  </select>
+                </div>
+
+              <div className="space-y-2">
                 <label
                   htmlFor="description"
                   className="text-sm font-semibold text-slate-700"
@@ -101,7 +123,7 @@ const RequestConcern = () => {
                   htmlFor="image"
                   className="text-sm font-semibold text-slate-700"
                 >
-                  Image
+                  Image (Optional)
                 </label>
                 <label
                   htmlFor="image"

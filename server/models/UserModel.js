@@ -16,6 +16,18 @@ const User = db.define("User", {
     allowNull: false,
     unique: true,
   },
+  roleId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: "Roles",
+      key: "id",
+    },
+  },
 });
+
+User.associate = (models) => {
+  User.belongsTo(models.Role, { foreignKey: "roleId", as: "role" });
+};
 
 export default User;

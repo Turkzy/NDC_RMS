@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import Concern from "../models/ConcernModel.js";
+import User from "../models/UserModel.js";
 
 const UPLOAD_DIR = path.resolve("public/concernfiles");
 const ALLOWED_FILE_TYPES = [".doc", ".docx", ".pdf", ".pptx", ".xlsx"];
@@ -49,7 +50,14 @@ const REQUIRED_FIELDS = [
   "remarks",
 ];
 
-const OPTIONAL_FIELDS = ["endUser", "reportReceivedBy", "levelOfRepair", "status"];
+const OPTIONAL_FIELDS = [
+  "endUser",
+  "reportReceivedBy",
+  "levelOfRepair",
+  "status",
+  "taggedEmails",
+  "taggedUserIds",
+];
 
 const collectBodyFields = (body) => {
   const payload = {};
@@ -67,10 +75,65 @@ const collectBodyFields = (body) => {
 };
 
 // GET ALL CONCERNS
-export const getConcerns = async (_req, res) => {
+export const getConcerns = async (req, res) => {
   try {
+    const { userEmail } = req.query;
     const concerns = await Concern.findAll();
-    res.status(200).json(concerns);
+
+    if (!userEmail) {
+      return res.status(200).json(concerns);
+    }
+
+    const currentUser = await User.findOne({ where: { email: userEmail } });
+    const currentUserId = currentUser ? currentUser.id?.toString() : null;
+    const normalizedEmail = userEmail.toLowerCase();
+
+    const filteredConcerns = concerns.filter((concern) => {
+      const reporterEmail = concern.reportedBy
+        ? concern.reportedBy.toLowerCase()
+        : null;
+      if (reporterEmail === normalizedEmail) {
+        return true;
+      }
+
+      const rawTaggedEmails = concern.taggedEmails;
+      const rawTaggedUserIds = concern.taggedUserIds;
+
+      const noTags =
+        (!rawTaggedEmails || rawTaggedEmails.trim() === "") &&
+        (!rawTaggedUserIds || rawTaggedUserIds.trim() === "");
+      if (noTags) {
+        return true;
+      }
+
+      if (rawTaggedEmails && rawTaggedEmails.trim() !== "") {
+        const taggedEmails = rawTaggedEmails
+          .split(",")
+          .map((email) => email.trim().toLowerCase())
+          .filter(Boolean);
+        if (taggedEmails.includes(normalizedEmail)) {
+          return true;
+        }
+      }
+
+      if (
+        currentUserId &&
+        rawTaggedUserIds &&
+        rawTaggedUserIds.trim() !== ""
+      ) {
+        const taggedIds = rawTaggedUserIds
+          .split(",")
+          .map((id) => id.trim())
+          .filter(Boolean);
+        if (taggedIds.includes(currentUserId)) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+
+    res.status(200).json(filteredConcerns);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
