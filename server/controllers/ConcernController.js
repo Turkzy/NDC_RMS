@@ -42,24 +42,27 @@ const deleteUploadedFile = (filename) => {
 const REQUIRED_FIELDS = [
   "description",
   "location",
-  "endUser",
   "reportedBy",
-  "reportReceivedBy",
-  "levelOfRepair",
-  "dateReceived",
   "deliveryDays",
   "targetDate",
   "controlNumber",
   "remarks",
 ];
 
+const OPTIONAL_FIELDS = ["endUser", "reportReceivedBy", "levelOfRepair", "status"];
+
 const collectBodyFields = (body) => {
   const payload = {};
-  REQUIRED_FIELDS.forEach((field) => {
-    payload[field] = body[field];
+  [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS].forEach((field) => {
+    if (body[field] !== undefined) {
+      payload[field] = body[field];
+    }
   });
-  payload.status = body.status || "Pending";
-  payload.dateCompleted = body.dateCompleted || null;
+
+  if (!payload.status) {
+    payload.status = "Pending";
+  }
+
   return payload;
 };
 
@@ -107,6 +110,9 @@ export const createConcern = async (req, res) => {
 
     const payload = collectBodyFields(req.body);
     payload.fileUrl = filename;
+    const now = new Date();
+    payload.createdAt = now;
+    payload.updatedAt = now;
 
     const concern = await Concern.create(payload);
     res.status(201).json({ message: "Concern created successfully", concern });
@@ -145,6 +151,8 @@ export const updateConcern = async (req, res) => {
 
     const payload = collectBodyFields({ ...concern.dataValues, ...req.body });
     payload.fileUrl = filename;
+    payload.createdAt = concern.createdAt;
+    payload.updatedAt = new Date();
 
     await concern.update(payload);
     res.status(200).json({ message: "Concern updated successfully" });

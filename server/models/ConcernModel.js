@@ -19,7 +19,7 @@ const Concern = db.define(
     },
     endUser: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     reportedBy: {
       type: DataTypes.STRING,
@@ -27,15 +27,11 @@ const Concern = db.define(
     },
     reportReceivedBy: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     levelOfRepair: {
       type: DataTypes.STRING,
-      allowNull: false,
-    },
-    dateReceived: {
-      type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
     },
     deliveryDays: {
       type: DataTypes.INTEGER,
@@ -44,10 +40,6 @@ const Concern = db.define(
     targetDate: {
       type: DataTypes.DATE,
       allowNull: false,
-    },
-    dateCompleted: {
-      type: DataTypes.DATE,
-      allowNull: true,
     },
     controlNumber: {
       type: DataTypes.STRING,
@@ -66,9 +58,17 @@ const Concern = db.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    createdAt: { 
+      type: DataTypes.DATE, 
+      allowNull: false 
+    },
+    updatedAt: { 
+      type: DataTypes.DATE, 
+      allowNull: false 
+    },
   },
   {
-    timestamps: true,
+    timestamps: false,
   }
 );
 

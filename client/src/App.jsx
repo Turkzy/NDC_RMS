@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 
-import Login from './pages/Login'
-import Dashboard from './components/Dashboard'
-import Logout from './pages/Logout'
-import CreateAccount from './pages/create-account'
+import Login from './pages/Login.jsx'
+import Dashboard from './components/Dashboard.jsx'
+import Logout from './pages/Logout.jsx'
+import RequestConcern from "./pages/Concerns/RequestConcern.jsx"
+import CreateAccount from './pages/create-account.jsx'
 
 const AppContent = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
@@ -51,9 +52,10 @@ const AppContent = () => {
             ? location.pathname === "/dashboard"
               ? <Dashboard />
               : <Navigate to="/dashboard" replace />
-            : <Login />
+            : <RequestConcern />
         }
       />
+      <Route path="/Admin" element={<Login />} />
       <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
       <Route path="/create-account" element={<CreateAccount />} />
       <Route path="/logout" element={<Logout />} />

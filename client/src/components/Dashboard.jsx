@@ -6,6 +6,7 @@ import {
   UserCog,
   LogOut,
   ChevronRight,
+  Settings,
 } from "lucide-react";
 import { RiDashboardLine } from "react-icons/ri";
 import {
@@ -24,6 +25,8 @@ import Header from "./Header.jsx";
 import DashboardPage from "../pages/Dashboard.jsx";
 import PendingConcern from "../pages/Concerns/PendingConcern.jsx";
 import ResolvedConcern from "../pages/Concerns/ResolvedConcern.jsx";
+
+import SettingsPanel from "../pages/Settings.jsx";
 
 const Dashboard = () => {
   const [activePanel, setActivePanel] = useState("dashboard");
@@ -152,6 +155,12 @@ const Dashboard = () => {
               onClick={() => setActivePanel("yearly_report")}
             />
           </SidebarItem>
+          <SidebarItem
+            icon={<Settings size={20} />}
+            text="Settings"
+            active={activePanel === "settings"}
+            onClick={() => setActivePanel("settings")}
+          />
         </Sidebar>
 
         {/* Active Panel Display */}
@@ -166,7 +175,7 @@ const Dashboard = () => {
             {activePanel === "yearly_report" && (
               <div>Yearly Report Content</div>
             )}
-            {activePanel === "account" && <div>Account Content</div>}
+            {activePanel === "settings" && <SettingsPanel />}
           </main>
           <footer className="text-center text-black hover:text-green-600 transition duration-300 bg-white">
             <a href="https://johnalbertsison.vercel.app/">
