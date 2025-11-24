@@ -9,6 +9,10 @@ const Concern = db.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    item: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     description: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -25,17 +29,9 @@ const Concern = db.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    reportReceivedBy: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     levelOfRepair: {
       type: DataTypes.STRING,
       allowNull: true,
-    },
-    deliveryDays: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
     },
     targetDate: {
       type: DataTypes.DATE,
@@ -55,14 +51,6 @@ const Concern = db.define(
       defaultValue: "Pending",
     },
     fileUrl: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    taggedEmails: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    taggedUserIds: {
       type: DataTypes.STRING,
       allowNull: true,
     },

@@ -7,6 +7,7 @@ import {
   LogOut,
   ChevronRight,
   Settings,
+  Logs
 } from "lucide-react";
 import { RiDashboardLine } from "react-icons/ri";
 import {
@@ -27,6 +28,7 @@ import PendingConcern from "../pages/Concerns/PendingConcern.jsx";
 import ResolvedConcern from "../pages/Concerns/ResolvedConcern.jsx";
 
 import SettingsPanel from "../pages/Settings.jsx";
+import ActionLogs from "../pages/Actionlogs.jsx";
 
 const Dashboard = () => {
   const [activePanel, setActivePanel] = useState("dashboard");
@@ -77,7 +79,8 @@ const Dashboard = () => {
       resolvedconcern: true,
       monthlyreport: true,
       yearlyreport: true,
-      account: true,
+      actionlogs: true,
+      settings: true,
       logout: true,
     };
   };
@@ -91,7 +94,7 @@ const Dashboard = () => {
       />
 
       {/* Sidebar and Content Area */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative mt-16">
         <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar}>
           {/* Dashboard */}
           {accessibleTabs().dashboard && (
@@ -156,6 +159,12 @@ const Dashboard = () => {
             />
           </SidebarItem>
           <SidebarItem
+            icon={<Logs size={20} />}
+            text="Action Logs"
+            active={activePanel === "action_logs"}
+            onClick={() => setActivePanel("action_logs")}
+          />
+          <SidebarItem
             icon={<Settings size={20} />}
             text="Settings"
             active={activePanel === "settings"}
@@ -164,8 +173,12 @@ const Dashboard = () => {
         </Sidebar>
 
         {/* Active Panel Display */}
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <main className="flex-1 p-4 transition duration-300 overflow-y-auto">
+        <div 
+          className={`flex flex-col flex-1 overflow-hidden transition-all duration-300 ${
+            isSidebarCollapsed ? "ml-16" : "ml-64"
+          }`}
+        >
+          <main className="flex-1 p-8 transition duration-300 overflow-y-auto">
             {activePanel === "dashboard" && <DashboardPage />}
             {activePanel === "pending" && <PendingConcern />}
             {activePanel === "resolved" && <ResolvedConcern />}
@@ -176,6 +189,7 @@ const Dashboard = () => {
               <div>Yearly Report Content</div>
             )}
             {activePanel === "settings" && <SettingsPanel />}
+            {activePanel === "action_logs" && <ActionLogs />}
           </main>
           <footer className="text-center text-black hover:text-green-600 transition duration-300 bg-white">
             <a href="https://johnalbertsison.vercel.app/">

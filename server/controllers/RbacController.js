@@ -158,7 +158,8 @@ export const createRole = async (req, res) => {
 export const getAllRoles = async (req, res) => {
     try {
       const roles = await Role.findAll({
-        include: [{ model: Permission, through: RolePermission, attributes: ["id", "name"], as: "Permissions" }],
+        attributes: ["id", "name"],
+        order: [["name", "ASC"]],
       });
       return res.status(200).json({ error: false, roles });
     } catch (error) {

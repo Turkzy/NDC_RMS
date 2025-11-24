@@ -1,17 +1,24 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/UserModel.js";
+import Role from "../models/Rbac/RoleModel.js";
 
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
 
 // CREATE NEW ACCOUNT (Self-registration)
 export const createAccount = async (req, res) => {
   try {
-    const { email, password, username } = req.body;
+    const { email, password, username, roleId } = req.body;
 
     // Validate input
-    if (!email || !password || !username) {
-      return res.status(400).json({ error: true, message: "Email, password, and username are required" });
+    if (!email || !password || !username || !roleId) {
+      return res.status(400).json({ error: true, message: "Email, password, username, and roleId are required" });
+    }
+
+    // Validate roleId
+    const role = await Role.findByPk(roleId);
+    if (!role) {
+      return res.status(400).json({ error: true, message: "Invalid roleId" });
     }
 
     // Basic email format validation
@@ -35,18 +42,18 @@ export const createAccount = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const newUser = await User.create({ email, password: hashedPassword, username });
+    const newUser = await User.create({ email, password: hashedPassword, username, roleId });
 
     // Generate JWT with expiration (24 hours default, configurable via env)
     const accessToken = jwt.sign(
-      { userId: newUser.id, email: newUser.email, username: newUser.username },
+      { userId: newUser.id, email: newUser.email, username: newUser.username, roleId: newUser.roleId },
       ACCESS_TOKEN_SECRET,
       { expiresIn: process.env.TOKEN_EXPIRATION || '24h' }
     );
 
     return res.status(201).json({
       error: false,
-      user: { id: newUser.id, email: newUser.email, username: newUser.username },
+      user: { id: newUser.id, email: newUser.email, username: newUser.username, roleId: newUser.roleId },
       accessToken,
       message: "Registration successful",
     });
@@ -91,6 +98,7 @@ export const login = async (req, res) => {
         id: user.id,
         email: user.email,
         username: user.username,
+        roleId: user.roleId,
       },
       accessToken,
       message: "Login successful",
@@ -117,11 +125,17 @@ export const getAllUsers = async (req, res) => {
 // ADD USER (Admin-only, requires middleware)
 export const addUser = async (req, res) => {
   try {
-    const { email, password, username } = req.body;
+    const { email, password, username, roleId } = req.body;
 
     // Validate input
-    if (!email || !password || !username) {
-      return res.status(400).json({ error: true, message: "Email, password, and username are required" });
+    if (!email || !password || !username || !roleId) {
+      return res.status(400).json({ error: true, message: "Email, password, username, and roleId are required" });
+    }
+
+    // Validate roleId
+    const role = await Role.findByPk(roleId);
+    if (!role) {
+      return res.status(400).json({ error: true, message: "Invalid roleId" });
     }
 
     // Email format validation
@@ -145,12 +159,12 @@ export const addUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const newUser = await User.create({ email, password: hashedPassword, username });
+    const newUser = await User.create({ email, password: hashedPassword, username, roleId });
 
     return res.status(201).json({
       error: false,
       message: "User added successfully",
-      user: { id: newUser.id, email: newUser.email, username: newUser.username },
+      user: { id: newUser.id, email: newUser.email, username: newUser.username, roleId: newUser.roleId },
     });
   } catch (error) {
     console.error("Add user error:", error);

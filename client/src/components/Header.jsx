@@ -59,7 +59,7 @@ const Header = ({ onMenuClick, isSidebarCollapsed }) => {
   };
 
   return (
-    <header className="w-full z-50 bg-white shadow-md border-b border-gray-200 select-none">
+    <header className="fixed top-0 left-0 w-full z-50 bg-white shadow-md border-b border-gray-200 select-none">
       <div className="flex items-center justify-between px-4 py-3 h-16">
         {/* Left Section - Logo and Menu */}
         <div className="flex items-center gap-4">
@@ -126,7 +126,7 @@ const Header = ({ onMenuClick, isSidebarCollapsed }) => {
                   className="fixed inset-0 z-10"
                   onClick={() => setShowUserMenu(false)}
                 ></div>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                <div className="absolute right-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                   <div className="p-3 border-b border-gray-200">
                     <p className="text-sm font-medium text-gray-800">
                       {getUserDisplayName()}

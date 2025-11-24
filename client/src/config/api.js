@@ -28,16 +28,49 @@ api.interceptors.request.use(
 );
 
 const endpoints = {
+  // AUTH ROUTES
   auth: {
     login: "/user/login",
     register: "/user/create-account",
   },
+
+  // USER ROUTES
   user: {
     getUsers: "/user/get-users",
     getUser: (id) => `/user/get/${id}`,
     create: "/user/add-user",
     update: (id) => `/user/update-user/${id}`,
     delete: (id) => `/user/delete-user/${id}`,
+  },
+
+  // RBAC ROUTES
+  rbac: {
+    getRoles: "/rbac/get-roles",
+  },
+
+  // ITEMS ROUTES
+  items: {
+    // ITEMS CODE ROUTES
+    createItemsCode: "/items/create-items-code",
+    getAllItemsCode: "/items/get-all-items-code",
+    getItemsCodeById: (id) => `/items/get-items-code-by-id/${id}`,
+    updateItemsCode: (id) => `/items/update-items-code/${id}`,
+    deleteItemsCode: (id) => `/items/delete-items-code/${id}`,
+
+    // ITEMS ROUTES
+    createItem: "/items/create-item",
+    getAllItems: "/items/get-all-items",
+    getItemById: (id) => `/items/get-item-by-id/${id}`,
+    updateItem: (id) => `/items/update-item/${id}`,
+    deleteItem: (id) => `/items/delete-item/${id}`,
+  },
+
+  // LOCATIONS ROUTES
+  locations: {
+    createLocation: "/locations/create-location",
+    getAllLocations: "/locations/get-all-locations",
+    updateLocation: (id) => `/locations/update-location/${id}`,
+    deleteLocation: (id) => `/locations/delete-location/${id}`,
   },
 };
 

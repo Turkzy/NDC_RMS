@@ -23,11 +23,11 @@ const Sidebar = ({ children, isCollapsed, onToggle }) => {
 
   return (
     <aside
-      className={`sticky top-0 h-screen z-40 bg-white select-none transition-all duration-300 ease-in-out ${
+      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 bg-white select-none transition-all duration-300 ease-in-out ${
         isCollapsed ? "w-16" : "w-64"
       }`}
     >
-      <nav className="h-full flex flex-col border-r border-gray-200 shadow-xl">
+      <nav className="h-full flex flex-col border-r border-gray-200 shadow-xl overflow-y-auto">
         <SidebarContext.Provider value={contextValue}>
           <ul className="flex-1 px-3 py-4">{children}</ul>
         </SidebarContext.Provider>

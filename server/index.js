@@ -10,6 +10,8 @@ import path from "path";
 import UserRoutes from "./routes/UserRoutes.js";
 import ConcernRoutes from "./routes/ConcernRoutes.js";
 import RbacRoutes from "./routes/RbacRoutes.js";
+import ItemsRoutes from "./routes/Dropdown/ItemsRoutes.js"
+import LocationRoutes from "./routes/Dropdown/LocationRoutes.js";
 
 dotenv.config();
 
@@ -30,6 +32,8 @@ app.use(fileUpload());
 app.use("/api/user", UserRoutes);
 app.use("/api/rbac", RbacRoutes);
 app.use("/api/concerns", ConcernRoutes);
+app.use("/api/items", ItemsRoutes);
+app.use("/api/locations", LocationRoutes);
 
 try {
   await db.authenticate();
