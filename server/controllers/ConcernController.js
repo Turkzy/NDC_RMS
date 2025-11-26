@@ -1,11 +1,12 @@
 import fs from "fs";
 import path from "path";
 import Concern from "../models/ConcernModel.js";
-import User from "../models/UserModel.js";
+import { Items, ItemsCode } from "../models/Dropdown/ItemsIndex.js";
+import { Op } from "sequelize";
 
 const UPLOAD_DIR = path.resolve("public/concernfiles");
-const ALLOWED_FILE_TYPES = [".doc", ".docx", ".pdf", ".pptx", ".xlsx"];
-const MAX_FILE_SIZE = 100_000_000; // 100 MB
+const ALLOWED_FILE_TYPES = [".jpg", ".jpeg", ".png"];
+const MAX_FILE_SIZE = 5_000_000; // 5 MB
 
 const ensureUploadDir = () => {
   if (!fs.existsSync(UPLOAD_DIR)) {
@@ -44,19 +45,15 @@ const REQUIRED_FIELDS = [
   "description",
   "location",
   "reportedBy",
-  "deliveryDays",
-  "targetDate",
-  "controlNumber",
-  "remarks",
+  "item",
 ];
 
 const OPTIONAL_FIELDS = [
   "endUser",
-  "reportReceivedBy",
   "levelOfRepair",
   "status",
-  "taggedEmails",
-  "taggedUserIds",
+  "remarks",
+  "targetDate",
 ];
 
 const collectBodyFields = (body) => {
@@ -74,6 +71,60 @@ const collectBodyFields = (body) => {
   return payload;
 };
 
+const generateControlNumber = async (itemId) => {
+  try {
+    // Get the Item and its associated ItemsCode
+    const item = await Items.findByPk(itemId, {
+      include: [
+        {
+          model: ItemsCode,
+          as: "itemCode",
+          attributes: ["itemCode"],
+        },
+      ],
+    });
+
+    if (!item || !item.itemCode) {
+      throw new Error("Item or ItemCode not found");
+    }
+
+    const itemCode = item.itemCode.itemCode;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+
+    // Find the last controlNumber in the current month (global increment regardless of item)
+    const yearMonth = `${year}-${month}`;
+    const pattern = `RMF-%-${yearMonth}-%`;
+
+    const lastConcern = await Concern.findOne({
+      where: {
+        controlNumber: {
+          [Op.like]: pattern,
+        },
+      },
+    order: [["createdAt", "DESC"]],
+    });
+
+    let increment = 1;
+    if (lastConcern && lastConcern.controlNumber) {
+      // Extract the increment number from the last controlNumber
+      const parts = lastConcern.controlNumber.split("-");
+      if (parts.length === 5) {
+        const lastIncrement = parseInt(parts[4], 10);
+        if (!isNaN(lastIncrement)) {
+          increment = lastIncrement + 1;
+        }
+      }
+    }
+
+    const controlNumber = `RMF-${itemCode}-${year}-${month}-${String(increment).padStart(3, "0")}`;
+    return controlNumber;
+  } catch (error) {
+    throw new Error(`Failed to generate control number: ${error.message}`);
+  }
+};
+
 // GET ALL CONCERNS
 export const getConcerns = async (req, res) => {
   try {
@@ -84,53 +135,14 @@ export const getConcerns = async (req, res) => {
       return res.status(200).json(concerns);
     }
 
-    const currentUser = await User.findOne({ where: { email: userEmail } });
-    const currentUserId = currentUser ? currentUser.id?.toString() : null;
     const normalizedEmail = userEmail.toLowerCase();
 
     const filteredConcerns = concerns.filter((concern) => {
       const reporterEmail = concern.reportedBy
         ? concern.reportedBy.toLowerCase()
         : null;
-      if (reporterEmail === normalizedEmail) {
-        return true;
-      }
-
-      const rawTaggedEmails = concern.taggedEmails;
-      const rawTaggedUserIds = concern.taggedUserIds;
-
-      const noTags =
-        (!rawTaggedEmails || rawTaggedEmails.trim() === "") &&
-        (!rawTaggedUserIds || rawTaggedUserIds.trim() === "");
-      if (noTags) {
-        return true;
-      }
-
-      if (rawTaggedEmails && rawTaggedEmails.trim() !== "") {
-        const taggedEmails = rawTaggedEmails
-          .split(",")
-          .map((email) => email.trim().toLowerCase())
-          .filter(Boolean);
-        if (taggedEmails.includes(normalizedEmail)) {
-          return true;
-        }
-      }
-
-      if (
-        currentUserId &&
-        rawTaggedUserIds &&
-        rawTaggedUserIds.trim() !== ""
-      ) {
-        const taggedIds = rawTaggedUserIds
-          .split(",")
-          .map((id) => id.trim())
-          .filter(Boolean);
-        if (taggedIds.includes(currentUserId)) {
-          return true;
-        }
-      }
-
-      return false;
+      // Only show concerns where the user is the reporter
+      return reporterEmail === normalizedEmail;
     });
 
     res.status(200).json(filteredConcerns);
@@ -152,14 +164,43 @@ export const getConcernById = async (req, res) => {
   }
 };
 
+// GET CONCERN BY CONTROL NUMBER
+export const getConcernByControlNumber = async (req, res) => {
+  try {
+    const { controlNumber } = req.params;
+    const concern = await Concern.findOne({
+      where: { controlNumber },
+    });
+    if (!concern) {
+      return res.status(404).json({ message: "Concern not found" });
+    }
+    res.status(200).json(concern);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // CREATE NEW CONCERN
 export const createConcern = async (req, res) => {
   try {
+    // Handle maintenanceType from frontend, map it to item field
+    if (req.body.maintenanceType && !req.body.item) {
+      req.body.item = req.body.maintenanceType;
+    }
+
     const missing = REQUIRED_FIELDS.filter((field) => !req.body[field]);
     if (missing.length) {
       return res
         .status(400)
         .json({ message: `Missing required fields: ${missing.join(", ")}` });
+    }
+
+    // Generate controlNumber based on item
+    let controlNumber;
+    try {
+      controlNumber = await generateControlNumber(req.body.item);
+    } catch (controlErr) {
+      return res.status(400).json({ message: controlErr.message });
     }
 
     let filename = null;
@@ -172,10 +213,11 @@ export const createConcern = async (req, res) => {
     }
 
     const payload = collectBodyFields(req.body);
+    payload.controlNumber = controlNumber;
     payload.fileUrl = filename;
     const now = new Date();
     payload.createdAt = now;
-    payload.updatedAt = now;
+    // updatedAt is null on creation, only set on updates
 
     const concern = await Concern.create(payload);
     res.status(201).json({ message: "Concern created successfully", concern });
@@ -192,6 +234,11 @@ export const updateConcern = async (req, res) => {
       return res.status(404).json({ message: "Concern not found" });
     }
 
+    // Handle maintenanceType from frontend, map it to item field
+    if (req.body.maintenanceType && !req.body.item) {
+      req.body.item = req.body.maintenanceType;
+    }
+
     const missing = REQUIRED_FIELDS.filter(
       (field) => !req.body[field] && concern[field] == null
     );
@@ -199,6 +246,18 @@ export const updateConcern = async (req, res) => {
       return res
         .status(400)
         .json({ message: `Missing required fields: ${missing.join(", ")}` });
+    }
+
+    // If item is being updated, regenerate controlNumber
+    const itemId = req.body.item || concern.item;
+    let controlNumber = concern.controlNumber;
+    
+    if (req.body.item && req.body.item !== concern.item) {
+      try {
+        controlNumber = await generateControlNumber(req.body.item);
+      } catch (controlErr) {
+        return res.status(400).json({ message: controlErr.message });
+      }
     }
 
     let filename = concern.fileUrl;
@@ -213,6 +272,7 @@ export const updateConcern = async (req, res) => {
     }
 
     const payload = collectBodyFields({ ...concern.dataValues, ...req.body });
+    payload.controlNumber = controlNumber;
     payload.fileUrl = filename;
     payload.createdAt = concern.createdAt;
     payload.updatedAt = new Date();

@@ -27,6 +27,7 @@ app.use(
 );
 app.use(express.json());
 app.use("/files", express.static(path.join(process.cwd(), "public/files")));
+app.use("/concernfiles", express.static(path.join(process.cwd(), "public/concernfiles")));
 app.use(fileUpload());
 
 app.use("/api/user", UserRoutes);
@@ -37,7 +38,7 @@ app.use("/api/locations", LocationRoutes);
 
 try {
   await db.authenticate();
-  console.log("✅ MySQL connected Sucessfully");
+  console.log("✅ MySQL connected Successfully");
   await db.sync();
 } catch (err) {
   console.error("❌ DB connection error:", err);

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { ToastContainer, toast, Bounce } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Pencil, Plus, Trash, X } from "lucide-react";
+import { Pencil, Plus, Trash, Trash2, X, Check } from "lucide-react";
 import api, { endpoints } from "../config/api";
+import Swal from "sweetalert2";
 
 const Settings = () => {
   // State management
@@ -110,7 +111,23 @@ const Settings = () => {
     try {
       const res = await api.post(endpoints.items.createItem, itemForm);
       if (res.data.error === false) {
-        toast.success("Created successfully!");
+        toast.success(
+          <div className="flex items-center gap-2">
+            <Check className="text-green-600" />
+            Created Successfully!
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            transition: Bounce,
+            icon: false,
+          }
+        );
         setShowItemModal(false);
         setItemForm({ itemName: "", itemId: "" });
         fetchItems();
@@ -128,7 +145,23 @@ const Settings = () => {
         itemForm
       );
       if (res.data.error === false) {
-        toast.success("Item updated successfully!");
+        toast.info(
+          <div className="flex items-center gap-2">
+            <Pencil className="text-blue-600" />
+            Updated Successfully!
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            transition: Bounce,
+            icon: false,
+          }
+        );
         setShowItemModal(false);
         setEditingItem(null);
         setItemForm({ itemName: "", itemId: "" });
@@ -140,15 +173,40 @@ const Settings = () => {
   };
 
   const handleDeleteItem = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
-    try {
-      const res = await api.delete(endpoints.items.deleteItem(id));
-      if (res.data.error === false) {
-        toast.error("Deleted Successfully!");
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Delete"
+    })
+    if (result.isConfirmed) {
+      try {
+        const res = await api.delete(endpoints.items.deleteItem(id));
+        toast.error(
+          <div className="flex items-center gap-2">
+            <Trash2 className="text-red-600" />
+            Deleted Successfully!
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            transition: Bounce,
+            icon: false,
+          }
+        );
         fetchItems();
+      } catch (err) {
+        console.error("Error deleting item:", err);
+        toast.error(err.response?.data?.message || "Failed to delete item.");
       }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to delete item.");
     }
   };
 
@@ -167,7 +225,23 @@ const Settings = () => {
     try {
       const res = await api.post(endpoints.items.createItemsCode, itemCodeForm);
       if (res.data.error === false) {
-        toast.success("Created Successfully!");
+        toast.success(
+          <div className="flex items-center gap-2">
+            <Check className="text-green-600" />
+            Created Successfully!
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            transition: Bounce,
+            icon: false,
+          }
+        );
         setShowItemCodeModal(false);
         setItemCodeForm({ itemCode: "" });
         fetchItemCodes();
@@ -185,7 +259,23 @@ const Settings = () => {
         itemCodeForm
       );
       if (res.data.error === false) {
-        toast.info("Updated Successfully!");
+        toast.info(
+          <div className="flex items-center gap-2">
+            <Pencil className="text-blue-600" />
+            Updated Successfully!
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            transition: Bounce,
+            icon: false,
+          }
+        );
         setShowItemCodeModal(false);
         setEditingItemCode(null);
         setItemCodeForm({ itemCode: "" });
@@ -197,16 +287,40 @@ const Settings = () => {
   };
 
   const handleDeleteItemCode = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this item code?"))
-      return;
-    try {
-      const res = await api.delete(endpoints.items.deleteItemsCode(id));
-      if (res.data.error === false) {
-        toast.error("Deleted Successfully!");
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Delete"
+    })
+    if (result.isConfirmed) {
+      try {
+        const res = await api.delete(endpoints.items.deleteItemsCode(id));
+        toast.error(
+          <div className="flex items-center gap-2">
+            <Trash2 className="text-red-600" />
+            Deleted Successfully!
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            transition: Bounce,
+            icon: false,
+          }
+        );
         fetchItemCodes();
+      } catch (err) {
+        console.error("Error deleting item code:", err);
+        toast.error(err.response?.data?.message || "Failed to delete item code.");
       }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to delete item code.");
     }
   };
 
@@ -668,10 +782,10 @@ const Settings = () => {
 
       {/* ITEM MODAL */}
       {showItemModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-[50rem] w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold font-montserrat text-gray-600">
                 {editingItem ? "Edit Item" : "Add Item"}
               </h3>
               <button
@@ -686,7 +800,7 @@ const Settings = () => {
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium font-montserrat text-gray-600 mb-1">
                   Item Name
                 </label>
                 <input
@@ -700,7 +814,7 @@ const Settings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium font-montserrat text-gray-600 mb-1">
                   Item Code
                 </label>
                 <select
@@ -711,9 +825,9 @@ const Settings = () => {
                   className="w-full border rounded px-3 py-2"
                   required
                 >
-                  <option value="">Select Item Code</option>
+                  <option value="" className="font-montserrat text-gray-600">Select Item Code</option>
                   {itemCodes.map((code) => (
-                    <option key={code.id} value={code.id}>
+                    <option key={code.id} value={code.id} className="font-montserrat text-gray-600">
                       {code.itemCode}
                     </option>
                   ))}
@@ -723,13 +837,13 @@ const Settings = () => {
                 <button
                   type="button"
                   onClick={resetModals}
-                  className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100"
+                  className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100 transition duration-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-300"
                 >
                   {editingItem ? "Update" : "Create"}
                 </button>
@@ -741,10 +855,10 @@ const Settings = () => {
 
       {/* LOCATION MODAL */}
       {showLocationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-[50rem] w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">
+              <h3 className="text-xl font-semibold font-montserrat text-gray-600">
                 {editingLocation ? "Edit Location" : "Add Location"}
               </h3>
               <button
@@ -761,7 +875,7 @@ const Settings = () => {
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium font-montserrat text-gray-600 mb-1">
                   Location Name
                 </label>
                 <input
@@ -781,13 +895,13 @@ const Settings = () => {
                 <button
                   type="button"
                   onClick={resetModals}
-                  className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100"
+                  className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100 transition duration-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-300"
                 >
                   {editingLocation ? "Update" : "Create"}
                 </button>
@@ -799,10 +913,10 @@ const Settings = () => {
 
       {/* ACCOUNT MODAL */}
       {showAccountModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-[50rem] w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">
+              <h3 className="text-xl font-semibold font-montserrat text-gray-600">
                 {editingAccount ? "Edit Account" : "Add Account"}
               </h3>
               <button
@@ -819,7 +933,7 @@ const Settings = () => {
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium font-montserrat text-gray-600 mb-1">
                   Username
                 </label>
                 <input
@@ -833,7 +947,7 @@ const Settings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
+                <label className="block text-sm font-medium font-montserrat text-gray-600 mb-1">Email</label>
                 <input
                   type="email"
                   value={accountForm.email}
@@ -845,7 +959,7 @@ const Settings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium font-montserrat text-gray-600 mb-1">
                   Password {editingAccount && "(leave blank to keep current)"}
                 </label>
                 <input
@@ -860,7 +974,7 @@ const Settings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Role</label>
+                <label className="block text-sm font-medium font-montserrat text-gray-600 mb-1">Role</label>
                 <select
                   value={accountForm.roleId}
                   onChange={(e) =>
@@ -869,9 +983,9 @@ const Settings = () => {
                   className="w-full border rounded px-3 py-2"
                   required
                 >
-                  <option value="">Select Role</option>
+                  <option value="" className="font-montserrat text-gray-600">Select Role</option>
                   {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
+                    <option key={role.id} value={role.id} className="font-montserrat text-gray-600">
                       {role.name}
                     </option>
                   ))}
@@ -881,13 +995,13 @@ const Settings = () => {
                 <button
                   type="button"
                   onClick={resetModals}
-                  className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100"
+                  className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100 transition duration-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-300"
                 >
                   {editingAccount ? "Update" : "Create"}
                 </button>
@@ -899,10 +1013,10 @@ const Settings = () => {
 
       {/* ITEM CODE MODAL */}
       {showItemCodeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-[50rem] w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">
+              <h3 className="text-xl font-semibold font-montserrat text-gray-600">
                 {editingItemCode ? "Edit Item Code" : "Add Item Code"}
               </h3>
               <button
@@ -919,7 +1033,7 @@ const Settings = () => {
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium font-montserrat text-gray-600 mb-1">
                   Item Code
                 </label>
                 <input
@@ -939,13 +1053,13 @@ const Settings = () => {
                 <button
                   type="button"
                   onClick={resetModals}
-                  className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100"
+                  className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100 transition duration-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-300"
                 >
                   {editingItemCode ? "Update" : "Create"}
                 </button>

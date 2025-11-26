@@ -55,11 +55,11 @@ const Header = ({ onMenuClick, isSidebarCollapsed }) => {
     setShowUserMenu(false);
 
     // Navigate to login page
-    navigate("/", { replace: true });
+    navigate("/Admin", { replace: true });
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-white shadow-md border-b border-gray-200 select-none">
+    <header className="fixed top-0 left-0 w-full z-50 bg-white opacity-90 backdrop-blur-sm shadow-sm border-b border-gray-200 select-none">
       <div className="flex items-center justify-between px-4 py-3 h-16">
         {/* Left Section - Logo and Menu */}
         <div className="flex items-center gap-4">

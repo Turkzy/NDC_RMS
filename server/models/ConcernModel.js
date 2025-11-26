@@ -35,7 +35,7 @@ const Concern = db.define(
     },
     targetDate: {
       type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
     },
     controlNumber: {
       type: DataTypes.STRING,
@@ -43,7 +43,7 @@ const Concern = db.define(
     },
     remarks: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     status: {
       type: DataTypes.STRING,
@@ -60,7 +60,7 @@ const Concern = db.define(
     },
     updatedAt: { 
       type: DataTypes.DATE, 
-      allowNull: false 
+      allowNull: true 
     },
   },
   {

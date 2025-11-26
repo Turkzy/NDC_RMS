@@ -66,11 +66,21 @@ const endpoints = {
   },
 
   // LOCATIONS ROUTES
-  locations: {
+  locations: {  
     createLocation: "/locations/create-location",
     getAllLocations: "/locations/get-all-locations",
     updateLocation: (id) => `/locations/update-location/${id}`,
     deleteLocation: (id) => `/locations/delete-location/${id}`,
+  },
+
+  // CONCERNS ROUTES
+  concerns: {
+    getAll: "/concerns",
+    getById: (id) => `/concerns/${id}`,
+    getByControlNumber: (controlNumber) => `/concerns/control-number/${controlNumber}`,
+    create: "/concerns",
+    update: (id) => `/concerns/${id}`,
+    delete: (id) => `/concerns/${id}`,
   },
 };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 import Login from './pages/Login.jsx'
 import Dashboard from './components/Dashboard.jsx'
@@ -9,7 +9,6 @@ import CreateAccount from './pages/create-account.jsx'
 
 const AppContent = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
-  const location = useLocation();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -45,16 +44,8 @@ const AppContent = () => {
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          isAuthenticated
-            ? location.pathname === "/dashboard"
-              ? <Dashboard />
-              : <Navigate to="/dashboard" replace />
-            : <RequestConcern />
-        }
-      />
+      <Route path="/" element={<RequestConcern />} />
+      <Route path="/request-concern" element={<RequestConcern />} />
       <Route path="/Admin" element={<Login />} />
       <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
       <Route path="/create-account" element={<CreateAccount />} />

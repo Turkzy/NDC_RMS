@@ -16,6 +16,14 @@ export const createItemsCode = async (req, res) => {
             });
         }
 
+        // Validate that item code contains only letters (no numbers)
+        if (!/^[A-Za-z]+$/.test(itemCode)) {
+            return res.status(400).json({ 
+                error: true, 
+                message: "Item code must contain only letters (A-Z, a-z). Numbers are not allowed." 
+            });
+        }
+
         // Check if itemCode already exists
         const existingCode = await ItemsCode.findOne({ 
             where: { itemCode } 
@@ -110,6 +118,14 @@ export const updateItemsCode = async (req, res) => {
             return res.status(400).json({ 
                 error: true, 
                 message: "itemCode is required" 
+            });
+        }
+
+        // Validate that item code contains only letters (no numbers)
+        if (!/^[A-Za-z]+$/.test(itemCode)) {
+            return res.status(400).json({ 
+                error: true, 
+                message: "Item code must contain only letters (A-Z, a-z). Numbers are not allowed." 
             });
         }
 
