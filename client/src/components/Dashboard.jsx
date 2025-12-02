@@ -7,7 +7,8 @@ import {
   LogOut,
   ChevronRight,
   Settings,
-  Logs
+  Logs,
+  FileText,
 } from "lucide-react";
 import { RiDashboardLine } from "react-icons/ri";
 import {
@@ -26,6 +27,7 @@ import Header from "./Header.jsx";
 import DashboardPage from "../pages/Dashboard.jsx";
 import PendingConcern from "../pages/Concerns/PendingConcern.jsx";
 import ResolvedConcern from "../pages/Concerns/ResolvedConcern.jsx";
+import AllConcern from "../pages/Concerns/AllConcern.jsx";
 
 import SettingsPanel from "../pages/Settings.jsx";
 import ActionLogs from "../pages/Actionlogs.jsx";
@@ -77,6 +79,7 @@ const Dashboard = () => {
       dashboard: true,
       pendingconcern: true,
       resolvedconcern: true,
+      allconcerns: true,
       monthlyreport: true,
       yearlyreport: true,
       actionlogs: true,
@@ -118,6 +121,12 @@ const Dashboard = () => {
             itemId="manage_concerns"
             dropdownIcon={<ChevronRight size={16} />}
           >
+            <SidebarItem 
+            icon={<FileText size={20} />}
+            text="All Concerns"
+            active={activePanel === "all_concerns"}
+            onClick={() => setActivePanel("all_concerns")}
+            />
             <SidebarItem
               icon={<ClipboardClock size={20} />}
               text="Pending"
@@ -182,6 +191,7 @@ const Dashboard = () => {
             {activePanel === "dashboard" && <DashboardPage />}
             {activePanel === "pending" && <PendingConcern />}
             {activePanel === "resolved" && <ResolvedConcern />}
+            {activePanel === "all_concerns" && <AllConcern />}
             {activePanel === "monthly_report" && (
               <div>Monthly Report Content</div>
             )}

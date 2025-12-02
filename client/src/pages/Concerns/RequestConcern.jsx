@@ -661,7 +661,7 @@ const RequestConcern = () => {
                   {statusCheckLoading && (
                     <div className="mt-3 space-y-2">
                       <div className="flex items-center justify-between text-xs text-emerald-600 mb-1">
-                        <span>Processing image with OCR...</span>
+                        <span>Processing image...</span>
                         <span className="font-semibold">{ocrProgress}%</span>
                       </div>
                       <div className="w-full bg-emerald-100 rounded-full h-2.5 overflow-hidden">
@@ -695,7 +695,7 @@ const RequestConcern = () => {
                         )}`}
                       >
                         {getLevelOfRepairIcon(statusCheckResult.levelOfRepair)}
-                        {statusCheckResult.levelOfRepair || "Minor"}
+                        {statusCheckResult.levelOfRepair || "Not Set"}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 justify-between">

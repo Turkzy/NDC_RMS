@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import bglogin from "../assets/sample2.png";
+import bg from "../assets/bg2.png"
 import logo from "../assets/ndc_logo.png";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -108,7 +109,8 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 text-gray-900 select-none">
-      <div className="w-full md:w-4/5 flex items-center justify-center px-6 py-16 md:px-12 bg-white relative overflow-hidden">
+      <div className="w-full md:w-4/5 flex items-center justify-center px-6 py-16 md:px-12 relative overflow-hidden bg-cover bg-right" 
+      style={{ backgroundImage: `url(${bg})` }}>
 
         <div className="relative z-10 w-full max-w-md space-y-10">
           <div className="text-center space-y-4">
@@ -117,7 +119,7 @@ const Login = () => {
               <p className="text-sm uppercase tracking-[0.3em] text-gray-500">
                 National Development Company
               </p>
-              <h1 className="text-3xl font-bold mt-2">Welcome Back</h1>
+              <h1 className="text-3xl text-slate-700 font-medium mt-2">Welcome Back</h1>
               <p className="text-gray-500 text-sm">
                 Sign in to access the Repair & Maintenance System.
               </p>

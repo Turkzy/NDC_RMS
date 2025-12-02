@@ -12,6 +12,7 @@ import ConcernRoutes from "./routes/ConcernRoutes.js";
 import RbacRoutes from "./routes/RbacRoutes.js";
 import ItemsRoutes from "./routes/Dropdown/ItemsRoutes.js"
 import LocationRoutes from "./routes/Dropdown/LocationRoutes.js";
+import RemarksRoutes from "./routes/RemarksRoutes.js";
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use("/api/rbac", RbacRoutes);
 app.use("/api/concerns", ConcernRoutes);
 app.use("/api/items", ItemsRoutes);
 app.use("/api/locations", LocationRoutes);
+app.use("/api/remarks", RemarksRoutes);
 
 try {
   await db.authenticate();

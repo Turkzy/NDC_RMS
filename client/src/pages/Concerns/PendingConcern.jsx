@@ -10,9 +10,13 @@ import {
   Clock,
   AlertCircle,
   TriangleAlert,
+  ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 import api, { endpoints } from "../../config/api";
+import { FaFileArrowDown, FaFileArrowUp } from "react-icons/fa6";
 import Swal from "sweetalert2";
+// Excel import/export helpers removed
 
 const PendingConcern = () => {
   // State management
@@ -25,6 +29,7 @@ const PendingConcern = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [refresh, setRefresh] = useState(false);
 
   // Modal states
   const [showConcernModal, setShowConcernModal] = useState(false);
@@ -35,6 +40,10 @@ const PendingConcern = () => {
 
   // Edit states
   const [editingConcern, setEditingConcern] = useState(null);
+  
+  // Remark editing states
+  const [editingRemarkId, setEditingRemarkId] = useState(null);
+  const [editingRemarkText, setEditingRemarkText] = useState("");
 
   // Form states
   const [concernForm, setConcernForm] = useState({
@@ -50,6 +59,7 @@ const PendingConcern = () => {
     item: "",
     fileUrl: "",
     image: null,
+    updatedAt: "",
   });
 
   useEffect(() => {
@@ -89,10 +99,22 @@ const PendingConcern = () => {
     }
   };
 
-  const fetchConcerns = async () => {
-    const res = await api.get(endpoints.concerns.getAll);
-    if (Array.isArray(res.data)) {
-      setConcerns(res.data);
+  const fetchConcerns = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefresh(true);
+      }
+      const res = await api.get(endpoints.concerns.getAll);
+      if (Array.isArray(res.data)) {
+        setConcerns(res.data);
+      }
+    } catch (err) {
+      console.error("Error fetching concerns:", err);
+      setError("Failed to fetch concerns. Please try again.");
+    } finally {
+      if (isRefresh) {
+        setRefresh(false);
+      }
     }
   };
 
@@ -139,6 +161,317 @@ const PendingConcern = () => {
     });
   };
 
+  const getLatestRemarkText = (remarks) => {
+    if (!Array.isArray(remarks) || remarks.length === 0) return "";
+    return remarks[remarks.length - 1]?.body || "";
+  };
+
+  const getCurrentUserLabel = () => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (!stored) return null;
+      const parsed = JSON.parse(stored);
+      return (
+        parsed?.fullName ||
+        parsed?.name ||
+        parsed?.email ||
+        parsed?.username ||
+        null
+      );
+    } catch (err) {
+      console.warn("Unable to parse stored user:", err);
+      return null;
+    }
+  };
+
+  const saveRemarkEntry = async (concernId, remarkText) => {
+    if (!remarkText || !remarkText.trim()) return;
+    try {
+      const addedBy =
+        getCurrentUserLabel() || concernForm.reportedBy || "System";
+      await api.post(endpoints.remarks.create(concernId), {
+        body: remarkText.trim(),
+        addedBy,
+      });
+    } catch (err) {
+      console.error("Failed to save remark:", err);
+      Swal.fire({
+        icon: "warning",
+        title: "Remark not saved",
+        text:
+          err.response?.data?.message ||
+          "Concern was saved, but adding the remark failed. Please try again.",
+      });
+    }
+  };
+
+  const handleUpdateRemark = async (remarkId, updatedText) => {
+    if (!updatedText || !updatedText.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "Invalid input",
+        text: "Remark text cannot be empty.",
+      });
+      return;
+    }
+
+    try {
+      const addedBy = getCurrentUserLabel() || "System";
+      await api.put(endpoints.remarks.update(remarkId), {
+        body: updatedText.trim(),
+        addedBy,
+      });
+
+      // Refresh concerns to get updated remarks
+      await fetchConcerns();
+      
+      // Update the editing concern if it's currently open
+      if (editingConcern) {
+        // Fetch fresh concern data
+        try {
+          const res = await api.get(endpoints.concerns.getById(editingConcern.id));
+          if (res.data) {
+            setEditingConcern(res.data);
+          }
+        } catch (err) {
+          console.error("Failed to refresh concern:", err);
+          // Fallback: find from concerns array
+          const updatedConcern = concerns.find((c) => c.id === editingConcern.id);
+          if (updatedConcern) {
+            setEditingConcern(updatedConcern);
+          }
+        }
+      }
+
+      setEditingRemarkId(null);
+      setEditingRemarkText("");
+      
+      Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: "Remark updated successfully",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Failed to update remark:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.response?.data?.message || "Failed to update remark. Please try again.",
+      });
+    }
+  };
+
+  const handleDeleteRemark = async (remarkId) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this remark? This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(endpoints.remarks.delete(remarkId));
+
+        // Refresh concerns to get updated remarks
+        await fetchConcerns();
+        
+        // Update the editing concern if it's currently open
+        if (editingConcern) {
+          // Fetch fresh concern data
+          try {
+            const res = await api.get(endpoints.concerns.getById(editingConcern.id));
+            if (res.data) {
+              setEditingConcern(res.data);
+            }
+          } catch (err) {
+            console.error("Failed to refresh concern:", err);
+            // Fallback: find from concerns array
+            const updatedConcern = concerns.find((c) => c.id === editingConcern.id);
+            if (updatedConcern) {
+              setEditingConcern(updatedConcern);
+            }
+          }
+        }
+
+        Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "Remark has been deleted successfully",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      } catch (err) {
+        console.error("Failed to delete remark:", err);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: err.response?.data?.message || "Failed to delete remark. Please try again.",
+        });
+      }
+    }
+  };
+
+  const RemarksList = ({ remarks, concernId, onUpdate, onDelete, showActions = true }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [localEditingRemarkId, setLocalEditingRemarkId] = useState(null);
+    const [localEditingText, setLocalEditingText] = useState("");
+
+    if (!Array.isArray(remarks) || remarks.length === 0) {
+      return (
+        <span className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 inline-flex items-center min-h-[60px]">
+          —
+        </span>
+      );
+    }
+
+    const latestRemark =
+      Array.isArray(remarks) && remarks.length > 0
+        ? remarks[remarks.length - 1]
+        : null;
+    const latestPreview = (() => {
+      if (!latestRemark?.body) return "—";
+      const trimmed = latestRemark.body.trim();
+      if (trimmed.length <= 120) return trimmed;
+      return `${trimmed.slice(0, 117)}...`;
+    })();
+
+    const handleStartEdit = (remark) => {
+      setLocalEditingRemarkId(remark.id);
+      setLocalEditingText(remark.body || "");
+    };
+
+    const handleCancelEdit = () => {
+      setLocalEditingRemarkId(null);
+      setLocalEditingText("");
+    };
+
+    const handleSaveEdit = () => {
+      if (onUpdate && localEditingRemarkId) {
+        onUpdate(localEditingRemarkId, localEditingText);
+        setLocalEditingRemarkId(null);
+        setLocalEditingText("");
+      }
+    };
+
+    const handleDelete = (remarkId) => {
+      if (onDelete) {
+        onDelete(remarkId);
+      }
+    };
+
+    return (
+      <div className="w-full rounded-2xl border border-slate-200 bg-white text-sm text-slate-700">
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
+        >
+          <div className="flex flex-col">
+            <span className="font-medium text-slate-800 line-clamp-2">
+              {latestPreview}
+            </span>
+            <span className="text-xs text-slate-500">
+              {formatDate(latestRemark?.createdAt)}
+            </span>
+          </div>
+          <ChevronDown
+            size={18}
+            className={`shrink-0 text-slate-400 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {isOpen && (
+          <div className="border-t border-slate-200 px-4 py-4 space-y-4">
+            {remarks.map((remark, index) => (
+              <div key={remark.id || `remark-${index}`}>
+                {localEditingRemarkId === remark.id ? (
+                  // Edit mode
+                  <div className="space-y-3">
+                    <textarea
+                      value={localEditingText}
+                      onChange={(e) => setLocalEditingText(e.target.value)}
+                      rows={4}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                      placeholder="Enter remark text..."
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveEdit}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-medium hover:bg-emerald-600 transition"
+                      >
+                        <Save size={14} className="inline mr-1" />
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 text-xs font-medium hover:bg-slate-50 transition"
+                      >
+                        <X size={14} className="inline mr-1" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // View mode
+                  <div className={`flex items-start gap-4 ${showActions ? 'justify-between' : ''}`}>
+                    {/* Left: Text + Date */}
+                    <div className="flex-1 flex flex-col">
+                      <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+                        {remark.body || "—"}
+                      </p>
+                      <span className="text-xs text-slate-500 mt-1">
+                        {formatDate(remark.createdAt)}
+                      </span>
+                    </div>
+
+                    {/* Right: Actions - Only show if showActions is true */}
+                    {showActions && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(remark)}
+                          className="px-3 py-1.5 rounded-md text-blue-500 text-xs font-medium hover:bg-blue-50 transition flex items-center gap-1"
+                          title="Edit remark"
+                        >
+                          <Pencil size={14} className="inline mr-1" />
+                          Update
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(remark.id)}
+                          className="px-2 py-1 rounded-md text-xs font-medium text-red-500 hover:text-red-600 hover:bg-red-50 transition flex items-center gap-1"
+                          title="Delete remark"
+                        >
+                          <Trash size={14} />
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Divider */}
+                {index < remarks.length - 1 && (
+                  <div className="border-t border-slate-200 mt-4" />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const getStatusBadgeClass = (status, variant = "default") => {
     const palette = {
       Completed: {
@@ -173,11 +506,12 @@ const PendingConcern = () => {
       levelOfRepair: concern.levelOfRepair || "",
       targetDate: concern.targetDate ? concern.targetDate.split("T")[0] : "",
       controlNumber: concern.controlNumber || "",
-      remarks: concern.remarks || "",
+      remarks: "",
       status: concern.status || "Pending",
       item: concern.item || "",
       fileUrl: concern.fileUrl || "",
       image: null,
+      updatedAt: "",
     });
     setShowConcernModal(true);
     setIsEditing(false);
@@ -202,6 +536,7 @@ const PendingConcern = () => {
       item: "",
       fileUrl: "",
       image: null,
+      updatedAt: "",
     });
     setError("");
     setSuccess("");
@@ -221,6 +556,7 @@ const PendingConcern = () => {
       item: "",
       fileUrl: "",
       image: null,
+      updatedAt: "",
     });
     setShowAddModal(true);
     setIsEditing(false);
@@ -238,22 +574,63 @@ const PendingConcern = () => {
       levelOfRepair: concern.levelOfRepair || "",
       targetDate: concern.targetDate ? concern.targetDate.split("T")[0] : "",
       controlNumber: concern.controlNumber || "",
-      remarks: concern.remarks || "",
+      remarks: "",
       status: concern.status || "Pending",
       item: concern.item || "",
       fileUrl: concern.fileUrl || "",
       image: null,
+      updatedAt: "",
     });
     setShowEditModal(true);
     setIsEditing(true);
   };
 
+  const calculateTargetDate = (levelOfRepair) => {
+    if (!levelOfRepair) return "";
+
+    const today = new Date();
+    let daysToAdd = 0;
+
+    switch (levelOfRepair) {
+      case "Critical/Urgent":
+        daysToAdd = 3;
+        break;
+      case "Minor":
+        daysToAdd = 5;
+        break;
+      case "Major":
+        daysToAdd = 7;
+        break;
+      default:
+        return "";
+    }
+
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + daysToAdd);
+
+    // Format as YYYY-MM-DD for date input
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, "0");
+    const day = String(targetDate.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setConcernForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setConcernForm((prev) => {
+      const updated = {
+        ...prev,
+        [name]: value,
+      };
+
+      // Automatically set targetDate when levelOfRepair changes
+      if (name === "levelOfRepair") {
+        updated.targetDate = calculateTargetDate(value);
+      }
+
+      return updated;
+    });
   };
 
   const handleFileChange = (e) => {
@@ -284,7 +661,6 @@ const PendingConcern = () => {
       submitData.append("maintenanceType", concernForm.item);
       submitData.append("endUser", concernForm.endUser || "");
       submitData.append("levelOfRepair", concernForm.levelOfRepair || "");
-      submitData.append("remarks", concernForm.remarks || "");
       submitData.append("status", concernForm.status);
       if (concernForm.targetDate) {
         submitData.append("targetDate", concernForm.targetDate);
@@ -294,6 +670,9 @@ const PendingConcern = () => {
         submitData.append("file", concernForm.image);
       }
 
+      // updatedAt should be null on creation, don't send it
+      // It will only be set when the concern is updated
+
       const response = await api.post(endpoints.concerns.create, submitData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -302,6 +681,10 @@ const PendingConcern = () => {
 
       if (response.data.message) {
         setSuccess(response.data.message);
+        const createdConcern = response.data.concern;
+        if (createdConcern?.id) {
+          await saveRemarkEntry(createdConcern.id, concernForm.remarks);
+        }
         await fetchConcerns();
         Swal.fire({
           icon: "success",
@@ -351,7 +734,6 @@ const PendingConcern = () => {
       submitData.append("item", concernForm.item);
       submitData.append("endUser", concernForm.endUser || "");
       submitData.append("levelOfRepair", concernForm.levelOfRepair || "");
-      submitData.append("remarks", concernForm.remarks || "");
       submitData.append("status", concernForm.status);
       if (concernForm.targetDate) {
         submitData.append("targetDate", concernForm.targetDate);
@@ -359,6 +741,10 @@ const PendingConcern = () => {
 
       if (concernForm.image) {
         submitData.append("file", concernForm.image);
+      }
+
+      if (concernForm.updatedAt) {
+        submitData.append("updatedAt", concernForm.updatedAt);
       }
 
       const response = await api.put(
@@ -373,6 +759,7 @@ const PendingConcern = () => {
 
       if (response.data.message) {
         setSuccess(response.data.message);
+        await saveRemarkEntry(editingConcern.id, concernForm.remarks);
         await fetchConcerns();
         Swal.fire({
           icon: "success",
@@ -402,7 +789,7 @@ const PendingConcern = () => {
   const handleDeleteConcern = async (concern) => {
     const result = await Swal.fire({
       title: "Are you sure?",
-      text: `Do you want to delete concern ${concern.controlNumber}? This action cannot be undone!`,
+      text: `Do you want to delete this concern? This action cannot be undone!`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -439,7 +826,10 @@ const PendingConcern = () => {
 
   const displayedConcerns = useMemo(() => {
     return concerns
-      .filter((concern) => concern.status?.toLowerCase() !== "Completed")
+      .filter((concern) => {
+        const status = concern.status?.toLowerCase();
+        return status === "pending" || status === "in progress";
+      })
       .filter((concern) => {
         const matchesSearch = searchTerm
           ? concern.controlNumber
@@ -459,6 +849,8 @@ const PendingConcern = () => {
         return matchesSearch && matchesMaintenance && matchesLevel;
       });
   }, [concerns, searchTerm, maintenanceType, levelOfRepair]);
+
+  // Excel import/export helpers removed
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md select-none">
@@ -502,8 +894,16 @@ const PendingConcern = () => {
             <option value="Major">Major</option>
             <option value="Critical/Urgent">Critical/Urgent</option>
           </select>
+          <button
+            onClick={() => fetchConcerns(true)}
+            disabled={loading || refresh}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            title="Refresh concerns"
+          >
+            <RefreshCw className={`w-4 h-4 ${refresh ? 'animate-spin' : ''}`} />
+          </button>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-2 w-full md:w-auto">
           <button
             onClick={openAddModal}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-montserrat transform hover:scale-105 transition duration-300"
@@ -588,7 +988,7 @@ const PendingConcern = () => {
                     )}
                   </td>
                   <td className="px-4 py-2 text-center whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis">
-                    {concern.remarks || "--:--"}
+                    {getLatestRemarkText(concern.remarks) || "--:--"}
                   </td>
                   <td className="px-4 py-2 text-center whitespace-nowrap">
                     <span
@@ -640,195 +1040,245 @@ const PendingConcern = () => {
         </table>
       </div>
 
+      {/* Details Modal */}
       {showConcernModal && editingConcern && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+          className="fixed inset-0 bg-slate-900/70  flex justify-center items-center z-50 p-4"
           onClick={closeConcernModal}
         >
           <div
-            className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-[50rem] w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto"
+            className="w-full max-w-6xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex justify-between items-center p-2 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl font-semibold font-montserrat text-gray-800">
-                  Details
-                </h2>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClass(
-                    editingConcern.status
-                  )}`}
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-h-[calc(100vh-2rem)] overflow-y-auto border border-slate-100">
+              {/* Header */}
+              <div className="flex flex-wrap gap-4 items-start justify-between px-8 pt-8 pb-4 border-b border-slate-100">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h2 className="text-2xl font-semibold font-montserrat text-slate-800">
+                      Details
+                    </h2>
+                  </div>
+                </div>
+                <button
+                  onClick={closeConcernModal}
+                  className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-2 transition-colors"
                 >
-                  {editingConcern.status || "Pending"}
-                </span>
+                  <X size={20} />
+                </button>
               </div>
-              <button
-                onClick={closeConcernModal}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
 
-            {/* Content */}
-            <div className="overflow-y-auto px-6 py-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Control Number */}
-                <div className="md:col-span-2">
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Control Number
-                  </div>
-                  <div className="text-sm text-gray-900 font-medium">
-                    {editingConcern.controlNumber || "—"}
-                  </div>
-                </div>
+              {/* Content */}
+              <div className="px-8 pb-8">
+                <div className="space-y-6 mt-6">
+                  {/* Meta Section */}
+                  <section className="space-y-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                        Concern Details
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        View the primary information for this request.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                          Control Number
+                        </label>
+                        <span
+                          className={`inline-flex w-full items-center gap-2 rounded-md border px-4 py-2 text-xs font-semibold ${getStatusBadgeClass(
+                            editingConcern.status
+                          )}`}
+                        >
+                          {editingConcern.controlNumber || "—"}
+                        </span>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                          Description
+                        </label>
+                        <span className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 font-medium inline-flex items-center gap-2 min-h-[60px]">
+                          {editingConcern.description || "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </section>
 
-                {/* Item */}
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Maintenance Type
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    {getItemLabel(editingConcern.item)}
-                  </div>
-                </div>
-
-                {/* Level of Repair */}
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Level of Repair
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    {editingConcern.levelOfRepair || "—"}
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="md:col-span-2">
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Description
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    {editingConcern.description || "—"}
-                  </div>
-                </div>
-
-                {/* Location */}
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Location
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    {getLocationLabel(editingConcern.location)}
-                  </div>
-                </div>
-
-                {/* Target Date */}
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Target Date
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    {editingConcern.targetDate || "—"}
-                  </div>
-                </div>
-
-                {/* End User */}
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    End User
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    {editingConcern.endUser || "—"}
-                  </div>
-                </div>
-
-                {/* Reported By */}
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Reported By
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    {editingConcern.reportedBy || "—"}
-                  </div>
-                </div>
-
-                {/* Remarks */}
-                <div className="md:col-span-2">
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Remarks
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    {editingConcern.remarks || "—"}
-                  </div>
-                </div>
-
-                {/* File */}
-                {editingConcern.fileUrl && (
-                  <div className="md:col-span-2">
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                      Image
+                  {/* Assignment Section */}
+                  <section className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                          Assignment
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Where and to whom the issue applies.
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
-                      <img
-                        src={getFileUrl(editingConcern.fileUrl)}
-                        alt="Concern attachment"
-                        className="max-h-80 w-full rounded-lg object-contain"
-                        onClick={() =>
-                          window.open(
-                            getFileUrl(editingConcern.fileUrl),
-                            "_blank"
-                          )
-                        }
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                          Location
+                        </label>
+                        <span className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 inline-flex items-center">
+                          {getLocationLabel(editingConcern.location) || "—"}
+                        </span>
+                      </div>
+
+                      {/* Maintenance Type */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                          Maintenance Type
+                        </label>
+                        <span className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 inline-flex items-center">
+                          {getItemLabel(editingConcern.item) || "—"}
+                        </span>
+                      </div>
+
+                      {/* Reported By */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                          Reported By
+                        </label>
+                        <span className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 inline-flex items-center">
+                          {editingConcern.reportedBy || "—"}
+                        </span>
+                      </div>
+
+                      {/* End User */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                          End User
+                        </label>
+                        <span className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 inline-flex items-center">
+                          {editingConcern.endUser || "—"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  </section>
 
-                {/* Date Received */}
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Date Received
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    {editingConcern.createdAt
-                      ? new Date(editingConcern.createdAt).toLocaleString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: true,
-                          }
-                        )
-                      : "—"}
-                  </div>
-                </div>
+                  {/* Status Section */}
+                  <section className="space-y-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                        Progress
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Define timelines, severity, and status.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                          Level of Repair
+                        </label>
+                        <span className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 inline-flex items-center">
+                          {editingConcern.levelOfRepair || "—"}
+                        </span>
+                      </div>
 
-                {/* Date Updated */}
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Date Accomplished
-                  </div>
-                  <div className="text-sm text-gray-900">
-                    {editingConcern.updatedAt
-                      ? new Date(editingConcern.updatedAt).toLocaleString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: true,
-                          }
-                        )
-                      : "—"}
-                  </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                          Target Date
+                        </label>
+                        <span className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 inline-flex items-center">
+                          {editingConcern.targetDate
+                            ? new Date(
+                                editingConcern.targetDate
+                              ).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })
+                            : "—"}
+                        </span>
+                      </div>
+                     
+                    </div>
+                  </section>
+
+                  {/* Date Information */}
+                  <section className="space-y-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                        Timeline
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Important dates for this concern.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                          Date Received
+                        </label>
+                        <span className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 inline-flex items-center">
+                          {editingConcern.createdAt
+                            ? new Date(editingConcern.createdAt).toLocaleString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                }
+                              )
+                            : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Notes Section */}
+                  <section className="space-y-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                        Notes & Attachments
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Extra context or supporting files.
+                      </p>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                          Remarks
+                        </label>
+                        <RemarksList 
+                          remarks={editingConcern.remarks} 
+                          concernId={editingConcern.id}
+                          onUpdate={handleUpdateRemark}
+                          onDelete={handleDeleteRemark}
+                          showActions={false}
+                        />
+                      </div>
+                      {editingConcern.fileUrl && (
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Image
+                          </label>
+                          <div className="mt-2 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                            <img
+                              src={getFileUrl(editingConcern.fileUrl)}
+                              alt="Concern attachment"
+                              className="max-h-80 w-full rounded-xl object-contain"
+                              onClick={() =>
+                                window.open(
+                                  getFileUrl(editingConcern.fileUrl),
+                                  "_blank"
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </section>
                 </div>
               </div>
             </div>
@@ -931,6 +1381,7 @@ const PendingConcern = () => {
                           </p>
                         </div>
                       </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
@@ -951,6 +1402,8 @@ const PendingConcern = () => {
                             ))}
                           </select>
                         </div>
+
+                        {/* Maintenance Type */}
                         <div>
                           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
                             Maintenance Type{" "}
@@ -963,7 +1416,7 @@ const PendingConcern = () => {
                             required
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                           >
-                            <option value="">--Select--</option>
+                            <option value="">--Select a Item--</option>
                             {itemsList.map((item) => (
                               <option key={item.id} value={item.id}>
                                 {item.itemName}
@@ -971,6 +1424,8 @@ const PendingConcern = () => {
                             ))}
                           </select>
                         </div>
+
+                        {/* Reported By */}
                         <div>
                           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
                             Reported By <span className="text-red-500">*</span>
@@ -984,6 +1439,8 @@ const PendingConcern = () => {
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                           />
                         </div>
+
+                        {/* End User */}
                         <div>
                           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
                             End User
@@ -1056,20 +1513,10 @@ const PendingConcern = () => {
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                           />
                         </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
-                            Date Completed
-                          </label>
-                          <input
-                            type="date"
-                            name="updatedAt"
-                            value={concernForm.updatedAt}
-                            onChange={handleFormChange}
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                          />
-                        </div>
                       </div>
                     </section>
+
+
 
                     {/* Notes Section */}
                     <section className="space-y-4">
@@ -1084,13 +1531,26 @@ const PendingConcern = () => {
                       <div className="space-y-4">
                         <div>
                           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
-                            Remarks
+                            Existing Remarks
+                          </label>
+                          <RemarksList 
+                            remarks={editingConcern.remarks} 
+                            concernId={editingConcern.id}
+                            onUpdate={handleUpdateRemark}
+                            onDelete={handleDeleteRemark}
+                          />
+                          
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Add New Remark
                           </label>
                           <textarea
                             name="remarks"
                             value={concernForm.remarks}
                             onChange={handleFormChange}
                             rows={4}
+                            placeholder="Type a new remark to append. Leave blank to keep unchanged."
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                           />
                         </div>
@@ -1169,7 +1629,7 @@ const PendingConcern = () => {
       {/* Add Concern Modal */}
       {showAddModal && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+          className="fixed inset-0 bg-slate-900/70  flex justify-center items-center z-50 p-4"
           onClick={closeConcernModal}
         >
           <div
@@ -1195,9 +1655,10 @@ const PendingConcern = () => {
               </div>
 
               <div className="px-8 pb-8">
-                {/* Error/Success Messages */}
+                {/* Form Column */}
                 <div className="space-y-6 mt-6">
-                {error && (
+                  {/* Error/Success Messages */}
+                  {error && (
                     <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl">
                       {error}
                     </div>
@@ -1207,237 +1668,289 @@ const PendingConcern = () => {
                       {success}
                     </div>
                   )}
-                </div>
-                {/* Add Form */}
-                <form onSubmit={handleCreateConcern} className="space-y-8">
 
-                  <section className="space-y-4">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
-                        Concern Details
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        Provide the primary information for this request.
-                      </p>
+                  <form onSubmit={handleCreateConcern} className="space-y-8">
+                    <section className="space-y-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                          Concern Details
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Provide the primary information for this request.
+                        </p>
+                      </div>
                       <div className="grid grid-cols-1 gap-4">
                         <div>
                           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
                             Description <span className="text-red-500">*</span>
-                            <textarea
-                              name="description"
-                              value={concernForm.description}
-                              onChange={handleFormChange}
-                              rows={3}
-                              required
-                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                            />
                           </label>
-                          
+                          <textarea
+                            name="description"
+                            value={concernForm.description}
+                            onChange={handleFormChange}
+                            rows={4}
+                            required
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Assignment Section */}
+                    <section className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                            Assignment
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            Where and to whom the issue applies
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Location */}
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Location <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            name="location"
+                            value={concernForm.location}
+                            onChange={handleFormChange}
+                            required
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          >
+                            <option value="">--Select a Location--</option>
+                            {locations.map((location) => (
+                              <option key={location.id} value={location.id}>
+                                {location.locationName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Maintenance Type */}
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Maintenance Type{" "}
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            name="item"
+                            value={concernForm.item}
+                            onChange={handleFormChange}
+                            required
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          >
+                            <option value="">--Select a Item--</option>
+                            {itemsList.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.itemName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Reported By */}
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Reported By <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="reportedBy"
+                            value={concernForm.reportedBy}
+                            onChange={handleFormChange}
+                            required
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
+                        </div>
+
+                        {/* End User */}
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            End User
+                          </label>
+                          <input
+                            type="text"
+                            name="endUser"
+                            value={concernForm.endUser}
+                            onChange={handleFormChange}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Status Section */}
+                    <section className="space-y-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                          Progress
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Define timelines, severity, and status.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Level of Repair
+                          </label>
+                          <select
+                            name="levelOfRepair"
+                            value={concernForm.levelOfRepair}
+                            onChange={handleFormChange}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          >
+                            <option value="">--Select--</option>
+                            <option value="Minor">Minor</option>
+                            <option value="Major">Major</option>
+                            <option value="Critical/Urgent">
+                              Critical/Urgent
+                            </option>
+                          </select>
                         </div>
                         <div>
                           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
-                            Description *
+                            Status *
                           </label>
+                          <select
+                            name="status"
+                            value={concernForm.status}
+                            onChange={handleFormChange}
+                            required
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Target Date
+                          </label>
+                          <input
+                            type="date"
+                            name="targetDate"
+                            value={concernForm.targetDate}
+                            onChange={handleFormChange}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
                         </div>
                       </div>
-                    </div>
-                  </section>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Description */}
-                    <div className="md:col-span-2">
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">
-                        Description *
-                      </label>
-                      <textarea
-                        name="description"
-                        value={concernForm.description}
-                        onChange={handleFormChange}
-                        rows={3}
-                        required
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                      />
-                    </div>
+                    </section>
 
-                    {/* Location */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">
-                        Location *
-                      </label>
-                      <select
-                        name="location"
-                        value={concernForm.location}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                    {/* Date Information */}
+                    <section className="space-y-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                          timeline
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Important dates for this concern.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Date Received
+                          </label>
+                          <input
+                            type="date"
+                            name="dateReceived"
+                            value={concernForm.createdAt}
+                            onChange={handleFormChange}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Date Accomplished
+                          </label>
+                          <input
+                            type="date"
+                            name="updatedAt"
+                            value={concernForm.updatedAt}
+                            onChange={handleFormChange}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Notes Section */}
+                    <section className="space-y-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                          Notes & Attachments
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Provide extra context or supporting files.
+                        </p>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Remarks
+                          </label>
+                          <textarea
+                            name="remarks"
+                            value={concernForm.remarks}
+                            onChange={handleFormChange}
+                            rows={4}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="concern-image"
+                            className="flex items-center justify-between rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/70 px-5 py-4 text-sm text-emerald-600 cursor-pointer hover:border-emerald-400 transition"
+                          >
+                            <span className="font-semibold">
+                              {concernForm.image
+                                ? concernForm.image.name
+                                : "Upload Image"}
+                            </span>
+                            <span className="text-xs text-emerald-500">
+                              PNG, JPG up to 5MB
+                            </span>
+                          </label>
+                          <input
+                            type="file"
+                            id="concern-image"
+                            name="image"
+                            onChange={handleFileChange}
+                            accept="image/jpeg, image/png, image/jpg"
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Form Actions */}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:justify-end border-t border-slate-100 pt-4">
+                      <button
+                        type="button"
+                        onClick={closeConcernModal}
+                        className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
                       >
-                        <option value="">--Select a Location--</option>
-                        {locations.map((location) => (
-                          <option key={location.id} value={location.id}>
-                            {location.locationName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Maintenance Type */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">
-                        Maintenance Type *
-                      </label>
-                      <select
-                        name="item"
-                        value={concernForm.item}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="px-6 py-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
-                        <option value="">--Select--</option>
-                        {itemsList.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.itemName}
-                          </option>
-                        ))}
-                      </select>
+                        <Plus size={18} />
+                        {submitting ? "Creating..." : "Create Concern"}
+                      </button>
                     </div>
-
-                    {/* Reported By */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">
-                        Reported By *
-                      </label>
-                      <input
-                        type="text"
-                        name="reportedBy"
-                        value={concernForm.reportedBy}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                      />
-                    </div>
-
-                    {/* End User */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">
-                        End User
-                      </label>
-                      <input
-                        type="text"
-                        name="endUser"
-                        value={concernForm.endUser}
-                        onChange={handleFormChange}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                      />
-                    </div>
-
-                    {/* Level of Repair */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">
-                        Level of Repair
-                      </label>
-                      <select
-                        name="levelOfRepair"
-                        value={concernForm.levelOfRepair}
-                        onChange={handleFormChange}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                      >
-                        <option value="">--Select--</option>
-                        <option value="Minor">Minor</option>
-                        <option value="Major">Major</option>
-                        <option value="Critical/Urgent">Critical/Urgent</option>
-                      </select>
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">
-                        Status *
-                      </label>
-                      <select
-                        name="status"
-                        value={concernForm.status}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Completed">Completed</option>
-                      </select>
-                    </div>
-
-                    {/* Target Date */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">
-                        Target Date
-                      </label>
-                      <input
-                        type="date"
-                        name="targetDate"
-                        value={concernForm.targetDate}
-                        onChange={handleFormChange}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                      />
-                    </div>
-
-                    {/* Remarks */}
-                    <div className="md:col-span-2">
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 block">
-                        Remarks
-                      </label>
-                      <textarea
-                        name="remarks"
-                        value={concernForm.remarks}
-                        onChange={handleFormChange}
-                        rows={2}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                      />
-                    </div>
-
-                    {/* Image Upload */}
-                    <div className="md:col-span-2">
-                      <label
-                        htmlFor="concern-image"
-                        className="flex items-center justify-between rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/70 px-5 py-4 text-sm text-emerald-600 cursor-pointer hover:border-emerald-400 transition"
-                      >
-                        <span className="font-semibold">
-                          {concernForm.image
-                            ? concernForm.image.name
-                            : "Upload Image"}
-                        </span>
-                        <span className="text-xs text-emerald-500">
-                          PNG, JPG up to 5MB
-                        </span>
-                      </label>
-                      <input
-                        type="file"
-                        id="concern-image"
-                        name="image"
-                        onChange={handleFileChange}
-                        accept="image/jpeg, image/png, image/jpg"
-                        className="hidden"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Form Actions */}
-                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                    <button
-                      type="button"
-                      onClick={closeConcernModal}
-                      className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      <Plus size={18} />
-                      {submitting ? "Creating..." : "Create Concern"}
-                    </button>
-                  </div>
-                </form>
+                  </form>
+                </div>
               </div>
             </div>
           </div>

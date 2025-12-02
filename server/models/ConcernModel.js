@@ -14,7 +14,7 @@ const Concern = db.define(
       allowNull: false,
     },
     description: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: false,
     },
     location: {
@@ -41,10 +41,6 @@ const Concern = db.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    remarks: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     status: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -56,7 +52,7 @@ const Concern = db.define(
     },
     createdAt: { 
       type: DataTypes.DATE, 
-      allowNull: false 
+      allowNull: true 
     },
     updatedAt: { 
       type: DataTypes.DATE, 

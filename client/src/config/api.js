@@ -82,6 +82,14 @@ const endpoints = {
     update: (id) => `/concerns/${id}`,
     delete: (id) => `/concerns/${id}`,
   },
+
+  // REMARKS ROUTES
+  remarks: {
+    getByConcern: (concernId) => `/remarks/${concernId}`,
+    create: (concernId) => `/remarks/${concernId}`,
+    update: (id) => `/remarks/${id}`,
+    delete: (id) => `/remarks/${id}`,
+  },
 };
 
 export { endpoints };

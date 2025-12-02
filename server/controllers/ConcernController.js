@@ -1,12 +1,21 @@
 import fs from "fs";
 import path from "path";
 import Concern from "../models/ConcernModel.js";
+import { Remark } from "../models/Remarks/RemarksIndexModel.js";
 import { Items, ItemsCode } from "../models/Dropdown/ItemsIndex.js";
 import { Op } from "sequelize";
 
 const UPLOAD_DIR = path.resolve("public/concernfiles");
 const ALLOWED_FILE_TYPES = [".jpg", ".jpeg", ".png"];
 const MAX_FILE_SIZE = 5_000_000; // 5 MB
+
+const remarksInclude = {
+  model: Remark,
+  as: "remarks",
+  separate: true,
+  attributes: ["id", "body", "addedBy", "createdAt", "updatedAt"],
+  order: [["createdAt", "ASC"]],
+};
 
 const ensureUploadDir = () => {
   if (!fs.existsSync(UPLOAD_DIR)) {
@@ -48,13 +57,7 @@ const REQUIRED_FIELDS = [
   "item",
 ];
 
-const OPTIONAL_FIELDS = [
-  "endUser",
-  "levelOfRepair",
-  "status",
-  "remarks",
-  "targetDate",
-];
+const OPTIONAL_FIELDS = ["endUser", "levelOfRepair", "status", "targetDate"];
 
 const collectBodyFields = (body) => {
   const payload = {};
@@ -129,7 +132,10 @@ const generateControlNumber = async (itemId) => {
 export const getConcerns = async (req, res) => {
   try {
     const { userEmail } = req.query;
-    const concerns = await Concern.findAll();
+    const concerns = await Concern.findAll({
+      include: [remarksInclude],
+      order: [["createdAt", "DESC"]],
+    });
 
     if (!userEmail) {
       return res.status(200).json(concerns);
@@ -154,7 +160,9 @@ export const getConcerns = async (req, res) => {
 // GET ONE CONCERN
 export const getConcernById = async (req, res) => {
   try {
-    const concern = await Concern.findByPk(req.params.id);
+    const concern = await Concern.findByPk(req.params.id, {
+      include: [remarksInclude],
+    });
     if (!concern) {
       return res.status(404).json({ message: "Concern not found" });
     }
@@ -170,6 +178,7 @@ export const getConcernByControlNumber = async (req, res) => {
     const { controlNumber } = req.params;
     const concern = await Concern.findOne({
       where: { controlNumber },
+      include: [remarksInclude],
     });
     if (!concern) {
       return res.status(404).json({ message: "Concern not found" });
@@ -218,6 +227,7 @@ export const createConcern = async (req, res) => {
     const now = new Date();
     payload.createdAt = now;
     // updatedAt is null on creation, only set on updates
+    payload.updatedAt = null;
 
     const concern = await Concern.create(payload);
     res.status(201).json({ message: "Concern created successfully", concern });
