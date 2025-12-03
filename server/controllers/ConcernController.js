@@ -96,30 +96,37 @@ const generateControlNumber = async (itemId) => {
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
 
-    // Find the last controlNumber in the current month (global increment regardless of item)
+    // Find all controlNumbers in the current month (global increment regardless of item)
+    // We need to find the highest increment number, not just the latest by createdAt
     const yearMonth = `${year}-${month}`;
     const pattern = `RMF-%-${yearMonth}-%`;
 
-    const lastConcern = await Concern.findOne({
+    const allConcerns = await Concern.findAll({
       where: {
         controlNumber: {
           [Op.like]: pattern,
         },
       },
-    order: [["createdAt", "DESC"]],
+      attributes: ["controlNumber"],
     });
 
-    let increment = 1;
-    if (lastConcern && lastConcern.controlNumber) {
-      // Extract the increment number from the last controlNumber
-      const parts = lastConcern.controlNumber.split("-");
-      if (parts.length === 5) {
-        const lastIncrement = parseInt(parts[4], 10);
-        if (!isNaN(lastIncrement)) {
-          increment = lastIncrement + 1;
+    let maxIncrement = 0;
+    
+    // Extract increment numbers from all control numbers and find the maximum
+    allConcerns.forEach((concern) => {
+      if (concern.controlNumber) {
+        const parts = concern.controlNumber.split("-");
+        if (parts.length === 5) {
+          const increment = parseInt(parts[4], 10);
+          if (!isNaN(increment) && increment > maxIncrement) {
+            maxIncrement = increment;
+          }
         }
       }
-    }
+    });
+
+    // Set increment to maxIncrement + 1, or 1 if no concerns found
+    const increment = maxIncrement + 1;
 
     const controlNumber = `RMF-${itemCode}-${year}-${month}-${String(increment).padStart(3, "0")}`;
     return controlNumber;
@@ -224,10 +231,26 @@ export const createConcern = async (req, res) => {
     const payload = collectBodyFields(req.body);
     payload.controlNumber = controlNumber;
     payload.fileUrl = filename;
-    const now = new Date();
-    payload.createdAt = now;
-    // updatedAt is null on creation, only set on updates
-    payload.updatedAt = null;
+    
+    // Handle dateReceived (createdAt)
+    if (req.body.dateReceived) {
+      payload.createdAt = new Date(req.body.dateReceived);
+    } else {
+      // If no dateReceived provided, use current date
+      payload.createdAt = new Date();
+    }
+    
+    // Handle dateAccomplished (updatedAt)
+    // Only set updatedAt if status is "Completed" or dateAccomplished is provided
+    if (req.body.dateAccomplished) {
+      payload.updatedAt = new Date(req.body.dateAccomplished);
+    } else if (req.body.status === "Completed") {
+      // If status is Completed but no dateAccomplished, set to current date
+      payload.updatedAt = new Date();
+    } else {
+      // Otherwise, keep it null
+      payload.updatedAt = null;
+    }
 
     const concern = await Concern.create(payload);
     res.status(201).json({ message: "Concern created successfully", concern });
@@ -284,8 +307,26 @@ export const updateConcern = async (req, res) => {
     const payload = collectBodyFields({ ...concern.dataValues, ...req.body });
     payload.controlNumber = controlNumber;
     payload.fileUrl = filename;
-    payload.createdAt = concern.createdAt;
-    payload.updatedAt = new Date();
+    
+    // Handle dateReceived (createdAt) - can be edited
+    if (req.body.dateReceived) {
+      payload.createdAt = new Date(req.body.dateReceived);
+    } else {
+      // Keep existing createdAt if not provided
+      payload.createdAt = concern.createdAt;
+    }
+    
+    // Handle dateAccomplished (updatedAt) - can be edited
+    if (req.body.dateAccomplished) {
+      payload.updatedAt = new Date(req.body.dateAccomplished);
+    } else if (req.body.status === "Completed") {
+      // If status is Completed but no dateAccomplished provided
+      // Set to current date if it was null, otherwise keep existing
+      payload.updatedAt = concern.updatedAt || new Date();
+    } else {
+      // If status is not Completed and no dateAccomplished, set to null
+      payload.updatedAt = null;
+    }
 
     await concern.update(payload);
     res.status(200).json({ message: "Concern updated successfully" });

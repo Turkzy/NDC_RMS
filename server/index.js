@@ -13,6 +13,7 @@ import RbacRoutes from "./routes/RbacRoutes.js";
 import ItemsRoutes from "./routes/Dropdown/ItemsRoutes.js"
 import LocationRoutes from "./routes/Dropdown/LocationRoutes.js";
 import RemarksRoutes from "./routes/RemarksRoutes.js";
+import ActionLogsRoutes from "./routes/ActionLogsRoutes.js";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use("/api/concerns", ConcernRoutes);
 app.use("/api/items", ItemsRoutes);
 app.use("/api/locations", LocationRoutes);
 app.use("/api/remarks", RemarksRoutes);
+app.use("/api/action-logs", ActionLogsRoutes);
 
 try {
   await db.authenticate();
@@ -46,5 +48,5 @@ try {
   console.error("❌ DB connection error:", err);
 }
 
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT;
 app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));

@@ -5,6 +5,8 @@ import {
   CheckCircle,
   ClipboardList,
   Clock4,
+  Loader,
+  CircleCheck
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -84,8 +86,7 @@ const Dashboard = () => {
 
   const getItemLabel = (value) => {
     if (!value) return "Other";
-    const match =
-      items.find((item) => String(item.id) === String(value)) || {};
+    const match = items.find((item) => String(item.id) === String(value)) || {};
     return match.itemName || value || "Other";
   };
 
@@ -127,7 +128,8 @@ const Dashboard = () => {
   const recentConcerns = useMemo(() => {
     return [...concerns]
       .sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
       .slice(0, 6);
   }, [concerns]);
@@ -142,7 +144,8 @@ const Dashboard = () => {
           label: "Concerns",
           data,
           backgroundColor: labels.map(
-            (label) => DEFAULT_STATUS_COLORS[label] || DEFAULT_STATUS_COLORS.default
+            (label) =>
+              DEFAULT_STATUS_COLORS[label] || DEFAULT_STATUS_COLORS.default
           ),
           borderWidth: 2,
         },
@@ -214,16 +217,18 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <div className="min-h-screen bg-white rounded-lg p-6 select-none">
+      <div className="mx-auto  space-y-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-emerald-500">
-              Maintenance Overview
+              Repair and Maintenance Overview
             </p>
-            <h1 className="text-3xl font-bold text-slate-800 mt-2">Dashboard</h1>
+            <h1 className="text-3xl font-semibold uppercase text-slate-600 mt-2">
+              Dashboard
+            </h1>
             <p className="text-sm text-slate-500">
-              Monitor incoming concerns, workload, and progress at a glance.
+              Monitoring the repair and maintenance of the facility.
             </p>
           </div>
 
@@ -257,41 +262,73 @@ const Dashboard = () => {
         ) : (
           <>
             {/* Stat cards */}
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {statCards.map(({ label, value, icon: Icon, accent }) => (
-                <article
-                  key={label}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase text-slate-500">
-                      {label}
-                    </p>
-                    <span className={`rounded-full p-2 ${accent}`}>
-                      <Icon size={18} />
-                    </span>
-                  </div>
-                  <p className="mt-4 text-3xl font-semibold text-slate-800">
-                    {value}
-                  </p>
-                </article>
-              ))}
-              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:col-span-2 xl:col-span-4">
-                <div className="flex items-center justify-between">
+              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 h">
+                <div className="rounded-2xl border border-slate-200 text-blue-600 bg-slate-50 p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
                   <div>
-                    <p className="text-xs font-semibold uppercase text-slate-500">
-                      Avg. Completion Time
+                    <p className="text-sm font-semibold font-montserrat text-blue-600">
+                      Total Concerns
                     </p>
-                    <p className="mt-2 text-3xl font-semibold text-slate-800">
-                      {averageCompletionTime}
+                    <p className="text-sm text-slate-500">
+                      Number of concerns that are total
+                    </p>
+                    <p className="text-2xl font-bold mt-1">
+                      {statusCounts.Total || 0}
                     </p>
                   </div>
-                  <div className="rounded-full bg-rose-100 p-3 text-rose-600">
-                    <AlertTriangle size={22} />
+                  <div>
+                    <ClipboardList size={40} />
                   </div>
                 </div>
-              </article>
-            </section>
+                <div className="rounded-2xl border border-slate-200 text-red-600 bg-slate-50  p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
+                  <div>
+                    <p className="text-sm font-semibold font-montserrat text-red-600">
+                      Pending
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Number of concerns that are pending
+                    </p>
+                    <p className="text-2xl font-bold mt-1">
+                      {statusCounts.Pending || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <Loader size={40} />
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 text-orange-600 bg-slate-50 p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
+                  <div>
+                    <p className="text-sm font-semibold font-montserrat text-orange-600">
+                      In Progress
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Number of concerns that are in progress
+                    </p>
+                    <p className="text-2xl font-bold mt-1">
+                      {statusCounts["In Progress"] || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <Loader size={40} />
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 text-green-600 bg-slate-50 p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
+                  <div>
+                    <p className="text-sm font-semibold font-montserrat text-green-600">
+                      Completed
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Number of concerns that are completed
+                    </p>
+                    <p className="text-2xl font-bold mt-1">
+                      {statusCounts.Completed || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <CircleCheck size={40} />
+                  </div>
+                </div>
+                
+              </section>
 
             {/* Charts */}
             <section className="grid gap-6 lg:grid-cols-2">
@@ -334,7 +371,8 @@ const Dashboard = () => {
                       Top Locations
                     </p>
                     <p className="text-sm text-slate-400">
-                      Locations with the most concerns ({timeRange === "all"
+                      Locations with the most concerns (
+                      {timeRange === "all"
                         ? "all time"
                         : `last ${timeRange} days`}
                       )
@@ -391,22 +429,22 @@ const Dashboard = () => {
                           ? ((count / filteredConcerns.length) * 100).toFixed(1)
                           : "0.0";
                       return (
-                      <div
-                        key={label}
-                        className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-slate-700">
-                            {label}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {percentage}% of requests
-                          </p>
+                        <div
+                          key={label}
+                          className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-slate-700">
+                              {label}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {percentage}% of requests
+                            </p>
+                          </div>
+                          <span className="text-lg font-semibold text-slate-900">
+                            {count}
+                          </span>
                         </div>
-                        <span className="text-lg font-semibold text-slate-900">
-                          {count}
-                        </span>
-                      </div>
                       );
                     })
                   ) : (
@@ -456,10 +494,13 @@ const Dashboard = () => {
                           <span>{getLocationLabel(concern.location)}</span>
                           <span>•</span>
                           <span>
-                            {new Date(concern.createdAt).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
+                            {new Date(concern.createdAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )}
                           </span>
                         </div>
                       </div>

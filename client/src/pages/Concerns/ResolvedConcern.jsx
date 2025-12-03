@@ -6,8 +6,7 @@ import {
   TriangleAlert,
   ChevronDown,
 } from "lucide-react";
-import api, { endpoints } from "../../config/api";
-import { FaFileArrowDown, FaFileArrowUp } from "react-icons/fa6";
+import api, { FILE_BASE_URL, endpoints } from "../../config/api.js";
 
 const ResolvedConcern = () => {
   // State management
@@ -84,10 +83,7 @@ const ResolvedConcern = () => {
 
   const getFileUrl = (fileName) => {
     if (!fileName) return null;
-    const base =
-      import.meta.env.VITE_API_URL?.replace("/api", "") ||
-      "http://localhost:5002";
-    return `${base}/concernfiles/${fileName}`;
+    return `${FILE_BASE_URL}${endpoints.concernfiles.getFile(fileName)}`;
   };
 
   const formatRemarkDate = (value) => {
@@ -252,20 +248,6 @@ const ResolvedConcern = () => {
             <option value="Major">Major</option>
             <option value="Critical/Urgent">Critical/Urgent</option>
           </select>
-        </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <button
-            title="Import"
-            className="flex items-center gap-2 text-green-500 px-2 py-2 rounded-md text-sm font-montserrat transform hover:scale-105 transition duration-300"
-          >
-            <FaFileArrowUp size={20} />
-          </button>
-          <button
-            title="Export"
-            className="flex items-center gap-2 text-red-500 px-2 py-2 rounded-md text-sm font-montserrat transform hover:scale-105 transition duration-300"
-          >
-            <FaFileArrowDown size={20} />
-          </button>
         </div>
       </div>
 
@@ -500,7 +482,7 @@ const ResolvedConcern = () => {
                                 editingConcern.targetDate
                               ).toLocaleDateString("en-US", {
                                 year: "numeric",
-                                month: "short",
+                                month: "long",
                                 day: "numeric",
                               })
                             : "—"}
@@ -531,11 +513,8 @@ const ResolvedConcern = () => {
                                 "en-US",
                                 {
                                   year: "numeric",
-                                  month: "short",
+                                  month: "long",
                                   day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
                                 }
                               )
                             : "—"}
@@ -551,11 +530,8 @@ const ResolvedConcern = () => {
                                 "en-US",
                                 {
                                   year: "numeric",
-                                  month: "short",
+                                  month: "long",
                                   day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
                                 }
                               )
                             : "—"}

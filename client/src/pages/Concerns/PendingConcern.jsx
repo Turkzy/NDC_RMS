@@ -13,10 +13,8 @@ import {
   ChevronDown,
   RefreshCw,
 } from "lucide-react";
-import api, { endpoints } from "../../config/api";
-import { FaFileArrowDown, FaFileArrowUp } from "react-icons/fa6";
+import api, { FILE_BASE_URL, endpoints } from "../../config/api";
 import Swal from "sweetalert2";
-// Excel import/export helpers removed
 
 const PendingConcern = () => {
   // State management
@@ -40,7 +38,7 @@ const PendingConcern = () => {
 
   // Edit states
   const [editingConcern, setEditingConcern] = useState(null);
-  
+
   // Remark editing states
   const [editingRemarkId, setEditingRemarkId] = useState(null);
   const [editingRemarkText, setEditingRemarkText] = useState("");
@@ -59,7 +57,8 @@ const PendingConcern = () => {
     item: "",
     fileUrl: "",
     image: null,
-    updatedAt: "",
+    dateReceived: "",
+    dateAccomplished: "",
   });
 
   useEffect(() => {
@@ -142,10 +141,7 @@ const PendingConcern = () => {
 
   const getFileUrl = (fileName) => {
     if (!fileName) return null;
-    const base =
-      import.meta.env.VITE_API_URL?.replace("/api", "") ||
-      "http://localhost:5002";
-    return `${base}/concernfiles/${fileName}`;
+    return `${FILE_BASE_URL}${endpoints.concernfiles.getFile(fileName)}`;
   };
 
   const formatDate = (value) => {
@@ -224,19 +220,23 @@ const PendingConcern = () => {
 
       // Refresh concerns to get updated remarks
       await fetchConcerns();
-      
+
       // Update the editing concern if it's currently open
       if (editingConcern) {
         // Fetch fresh concern data
         try {
-          const res = await api.get(endpoints.concerns.getById(editingConcern.id));
+          const res = await api.get(
+            endpoints.concerns.getById(editingConcern.id)
+          );
           if (res.data) {
             setEditingConcern(res.data);
           }
         } catch (err) {
           console.error("Failed to refresh concern:", err);
           // Fallback: find from concerns array
-          const updatedConcern = concerns.find((c) => c.id === editingConcern.id);
+          const updatedConcern = concerns.find(
+            (c) => c.id === editingConcern.id
+          );
           if (updatedConcern) {
             setEditingConcern(updatedConcern);
           }
@@ -245,7 +245,7 @@ const PendingConcern = () => {
 
       setEditingRemarkId(null);
       setEditingRemarkText("");
-      
+
       Swal.fire({
         icon: "success",
         title: "Success!",
@@ -258,7 +258,9 @@ const PendingConcern = () => {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: err.response?.data?.message || "Failed to update remark. Please try again.",
+        text:
+          err.response?.data?.message ||
+          "Failed to update remark. Please try again.",
       });
     }
   };
@@ -281,19 +283,23 @@ const PendingConcern = () => {
 
         // Refresh concerns to get updated remarks
         await fetchConcerns();
-        
+
         // Update the editing concern if it's currently open
         if (editingConcern) {
           // Fetch fresh concern data
           try {
-            const res = await api.get(endpoints.concerns.getById(editingConcern.id));
+            const res = await api.get(
+              endpoints.concerns.getById(editingConcern.id)
+            );
             if (res.data) {
               setEditingConcern(res.data);
             }
           } catch (err) {
             console.error("Failed to refresh concern:", err);
             // Fallback: find from concerns array
-            const updatedConcern = concerns.find((c) => c.id === editingConcern.id);
+            const updatedConcern = concerns.find(
+              (c) => c.id === editingConcern.id
+            );
             if (updatedConcern) {
               setEditingConcern(updatedConcern);
             }
@@ -312,13 +318,21 @@ const PendingConcern = () => {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: err.response?.data?.message || "Failed to delete remark. Please try again.",
+          text:
+            err.response?.data?.message ||
+            "Failed to delete remark. Please try again.",
         });
       }
     }
   };
 
-  const RemarksList = ({ remarks, concernId, onUpdate, onDelete, showActions = true }) => {
+  const RemarksList = ({
+    remarks,
+    concernId,
+    onUpdate,
+    onDelete,
+    showActions = true,
+  }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [localEditingRemarkId, setLocalEditingRemarkId] = useState(null);
     const [localEditingText, setLocalEditingText] = useState("");
@@ -423,7 +437,11 @@ const PendingConcern = () => {
                   </div>
                 ) : (
                   // View mode
-                  <div className={`flex items-start gap-4 ${showActions ? 'justify-between' : ''}`}>
+                  <div
+                    className={`flex items-start gap-4 ${
+                      showActions ? "justify-between" : ""
+                    }`}
+                  >
                     {/* Left: Text + Date */}
                     <div className="flex-1 flex flex-col">
                       <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
@@ -511,7 +529,8 @@ const PendingConcern = () => {
       item: concern.item || "",
       fileUrl: concern.fileUrl || "",
       image: null,
-      updatedAt: "",
+      dateReceived: "",
+      dateAccomplished: "",
     });
     setShowConcernModal(true);
     setIsEditing(false);
@@ -536,7 +555,8 @@ const PendingConcern = () => {
       item: "",
       fileUrl: "",
       image: null,
-      updatedAt: "",
+      dateReceived: "",
+      dateAccomplished: "",
     });
     setError("");
     setSuccess("");
@@ -556,7 +576,8 @@ const PendingConcern = () => {
       item: "",
       fileUrl: "",
       image: null,
-      updatedAt: "",
+      dateReceived: "",
+      dateAccomplished: "",
     });
     setShowAddModal(true);
     setIsEditing(false);
@@ -579,7 +600,8 @@ const PendingConcern = () => {
       item: concern.item || "",
       fileUrl: concern.fileUrl || "",
       image: null,
-      updatedAt: "",
+      dateReceived: concern.createdAt ? concern.createdAt.split("T")[0] : "",
+      dateAccomplished: concern.updatedAt ? concern.updatedAt.split("T")[0] : "",
     });
     setShowEditModal(true);
     setIsEditing(true);
@@ -670,8 +692,15 @@ const PendingConcern = () => {
         submitData.append("file", concernForm.image);
       }
 
-      // updatedAt should be null on creation, don't send it
-      // It will only be set when the concern is updated
+      // Handle dateReceived (createdAt) - if provided, send it; otherwise server will use current date
+      if (concernForm.dateReceived) {
+        submitData.append("dateReceived", concernForm.dateReceived);
+      }
+
+      // Handle dateAccomplished (updatedAt) - only send if provided
+      if (concernForm.dateAccomplished) {
+        submitData.append("dateAccomplished", concernForm.dateAccomplished);
+      }
 
       const response = await api.post(endpoints.concerns.create, submitData, {
         headers: {
@@ -743,8 +772,14 @@ const PendingConcern = () => {
         submitData.append("file", concernForm.image);
       }
 
-      if (concernForm.updatedAt) {
-        submitData.append("updatedAt", concernForm.updatedAt);
+      // Handle dateReceived (createdAt) - can be edited
+      if (concernForm.dateReceived) {
+        submitData.append("dateReceived", concernForm.dateReceived);
+      }
+
+      // Handle dateAccomplished (updatedAt) - can be edited
+      if (concernForm.dateAccomplished) {
+        submitData.append("dateAccomplished", concernForm.dateAccomplished);
       }
 
       const response = await api.put(
@@ -900,7 +935,7 @@ const PendingConcern = () => {
             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
             title="Refresh concerns"
           >
-            <RefreshCw className={`w-4 h-4 ${refresh ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${refresh ? "animate-spin" : ""}`} />
           </button>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
@@ -1190,13 +1225,12 @@ const PendingConcern = () => {
                                 editingConcern.targetDate
                               ).toLocaleDateString("en-US", {
                                 year: "numeric",
-                                month: "short",
+                                month: "long",
                                 day: "numeric",
                               })
                             : "—"}
                         </span>
                       </div>
-                     
                     </div>
                   </section>
 
@@ -1221,11 +1255,8 @@ const PendingConcern = () => {
                                 "en-US",
                                 {
                                   year: "numeric",
-                                  month: "short",
+                                  month: "long",
                                   day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
                                 }
                               )
                             : "—"}
@@ -1249,8 +1280,8 @@ const PendingConcern = () => {
                         <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
                           Remarks
                         </label>
-                        <RemarksList 
-                          remarks={editingConcern.remarks} 
+                        <RemarksList
+                          remarks={editingConcern.remarks}
                           concernId={editingConcern.id}
                           onUpdate={handleUpdateRemark}
                           onDelete={handleDeleteRemark}
@@ -1516,7 +1547,43 @@ const PendingConcern = () => {
                       </div>
                     </section>
 
-
+                    {/* Date Information */}
+                    <section className="space-y-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] font-semibold text-emerald-500">
+                          timeline
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Important dates for this concern.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Date Received
+                          </label>
+                          <input
+                            type="date"
+                            name="dateReceived"
+                            value={concernForm.dateReceived}
+                            onChange={handleFormChange}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
+                            Date Accomplished
+                          </label>
+                          <input
+                            type="date"
+                            name="dateAccomplished"
+                            value={concernForm.dateAccomplished}
+                            onChange={handleFormChange}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
+                        </div>
+                      </div>
+                    </section>
 
                     {/* Notes Section */}
                     <section className="space-y-4">
@@ -1533,13 +1600,12 @@ const PendingConcern = () => {
                           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
                             Existing Remarks
                           </label>
-                          <RemarksList 
-                            remarks={editingConcern.remarks} 
+                          <RemarksList
+                            remarks={editingConcern.remarks}
                             concernId={editingConcern.id}
                             onUpdate={handleUpdateRemark}
                             onDelete={handleDeleteRemark}
                           />
-                          
                         </div>
                         <div>
                           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
@@ -1626,7 +1692,7 @@ const PendingConcern = () => {
         </div>
       )}
 
-      {/* Add Concern Modal */}
+      {/* Create Modal */}
       {showAddModal && (
         <div
           className="fixed inset-0 bg-slate-900/70  flex justify-center items-center z-50 p-4"
@@ -1862,7 +1928,7 @@ const PendingConcern = () => {
                           <input
                             type="date"
                             name="dateReceived"
-                            value={concernForm.createdAt}
+                            value={concernForm.dateReceived}
                             onChange={handleFormChange}
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                           />
@@ -1873,8 +1939,8 @@ const PendingConcern = () => {
                           </label>
                           <input
                             type="date"
-                            name="updatedAt"
-                            value={concernForm.updatedAt}
+                            name="dateAccomplished"
+                            value={concernForm.dateAccomplished}
                             onChange={handleFormChange}
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                           />

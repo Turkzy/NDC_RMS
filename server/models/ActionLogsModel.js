@@ -15,6 +15,10 @@ const ActionLogs = db.define("ActionLogs", {
         type: DataTypes.TEXT,
         allowNull: false,
     }
-});
+},
+{
+    timestamps: true,
+}
+);
 
 export default ActionLogs;

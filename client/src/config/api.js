@@ -4,6 +4,10 @@ import { jwtDecode } from "jwt-decode";
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5002/api";
 
+// Base URL for static files (served outside /api, e.g. /concernfiles)
+// If API_BASE_URL ends with /api, strip it; otherwise reuse as-is
+const FILE_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
+
 // Create axios instance with default configuration
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -83,6 +87,11 @@ const endpoints = {
     delete: (id) => `/concerns/${id}`,
   },
 
+  // CONCERN FILES ROUTES
+  concernfiles: {
+    getFile: (fileName) => `/concernfiles/${fileName}`,
+  },
+
   // REMARKS ROUTES
   remarks: {
     getByConcern: (concernId) => `/remarks/${concernId}`,
@@ -92,5 +101,5 @@ const endpoints = {
   },
 };
 
-export { endpoints };
+export { endpoints, API_BASE_URL, FILE_BASE_URL };
 export default api;
