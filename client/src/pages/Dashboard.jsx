@@ -1,10 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Activity,
-  AlertTriangle,
-  CheckCircle,
   ClipboardList,
-  Clock4,
   Loader,
   CircleCheck
 } from "lucide-react";
@@ -30,8 +26,8 @@ ChartJS.register(
 );
 
 const DEFAULT_STATUS_COLORS = {
-  Pending: "#f97316",
-  "In Progress": "#facc15",
+  Pending: "#fa2a2a",
+  "In Progress": "#f59e0b",
   Completed: "#22c55e",
   default: "#94a3b8",
 };
@@ -109,29 +105,13 @@ const Dashboard = () => {
     return counts;
   }, [concerns]);
 
-  const averageCompletionTime = useMemo(() => {
-    const completed = concerns.filter(
-      (concern) => (concern.status || "").toLowerCase() === "completed"
-    );
-    if (!completed.length) return "--";
-    const totalHours = completed.reduce((sum, concern) => {
-      const start = new Date(concern.createdAt).getTime();
-      const end = new Date(concern.updatedAt || concern.createdAt).getTime();
-      if (Number.isNaN(start) || Number.isNaN(end)) return sum;
-      return sum + Math.max(0, end - start);
-    }, 0);
-    const avgMs = totalHours / completed.length;
-    const hours = avgMs / (1000 * 60 * 60);
-    return `${hours.toFixed(1)} hrs`;
-  }, [concerns]);
-
   const recentConcerns = useMemo(() => {
     return [...concerns]
       .sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
-      .slice(0, 6);
+      .slice(0, 3);
   }, [concerns]);
 
   const statusChartData = useMemo(() => {
@@ -185,36 +165,9 @@ const Dashboard = () => {
     }, {});
     const entries = Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+      .slice(0, 4);
     return entries;
   }, [filteredConcerns, items]);
-
-  const statCards = [
-    {
-      label: "Total Concerns",
-      value: statusCounts.Total || 0,
-      icon: ClipboardList,
-      accent: "bg-blue-100 text-blue-600",
-    },
-    {
-      label: "Pending",
-      value: statusCounts.Pending || 0,
-      icon: Clock4,
-      accent: "bg-amber-100 text-amber-600",
-    },
-    {
-      label: "In Progress",
-      value: statusCounts["In Progress"] || 0,
-      icon: Activity,
-      accent: "bg-indigo-100 text-indigo-600",
-    },
-    {
-      label: "Completed",
-      value: statusCounts.Completed || 0,
-      icon: CheckCircle,
-      accent: "bg-emerald-100 text-emerald-600",
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-white rounded-lg p-6 select-none">
@@ -263,7 +216,7 @@ const Dashboard = () => {
           <>
             {/* Stat cards */}
               <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 h">
-                <div className="rounded-2xl border border-slate-200 text-blue-600 bg-slate-50 p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
+                <div className="rounded-2xl border border-slate-200 text-blue-600 bg-white p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
                   <div>
                     <p className="text-sm font-semibold font-montserrat text-blue-600">
                       Total Concerns
@@ -279,7 +232,7 @@ const Dashboard = () => {
                     <ClipboardList size={40} />
                   </div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 text-red-600 bg-slate-50  p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
+                <div className="rounded-2xl border border-slate-200 text-red-600 bg-white  p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
                   <div>
                     <p className="text-sm font-semibold font-montserrat text-red-600">
                       Pending
@@ -295,9 +248,9 @@ const Dashboard = () => {
                     <Loader size={40} />
                   </div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 text-orange-600 bg-slate-50 p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
+                <div className="rounded-2xl border border-slate-200 text-amber-500 bg-white p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
                   <div>
-                    <p className="text-sm font-semibold font-montserrat text-orange-600">
+                    <p className="text-sm font-semibold font-montserrat text-amber-500">
                       In Progress
                     </p>
                     <p className="text-sm text-slate-500">
@@ -311,7 +264,7 @@ const Dashboard = () => {
                     <Loader size={40} />
                   </div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 text-green-600 bg-slate-50 p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
+                <div className="rounded-2xl border border-slate-200 text-green-600 bg-white p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
                   <div>
                     <p className="text-sm font-semibold font-montserrat text-green-600">
                       Completed
@@ -343,7 +296,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                 </div>
-                <div className="mt-6 h-72">
+                <div className="mt-6 h-72 flex items-center justify-center">
                   {statusCounts.Total ? (
                     <Doughnut
                       data={statusChartData}
@@ -481,7 +434,7 @@ const Dashboard = () => {
                                 ? "bg-emerald-100 text-emerald-700"
                                 : concern.status === "In Progress"
                                 ? "bg-amber-100 text-amber-700"
-                                : "bg-slate-100 text-slate-700"
+                                : "bg-red-100 text-red-700"
                             }`}
                           >
                             {concern.status || "Pending"}
@@ -497,8 +450,9 @@ const Dashboard = () => {
                             {new Date(concern.createdAt).toLocaleDateString(
                               "en-US",
                               {
-                                month: "short",
+                                month: "long",
                                 day: "numeric",
+                                year: "numeric",
                               }
                             )}
                           </span>

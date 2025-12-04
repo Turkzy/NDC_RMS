@@ -6,6 +6,8 @@ import Dashboard from './components/Dashboard.jsx'
 import Logout from './pages/Logout.jsx'
 import RequestConcern from "./pages/Concerns/RequestConcern.jsx"
 import CreateAccount from './pages/create-account.jsx'
+import MonthlyReports from './pages/Reports/MonthlyReports.jsx'
+import PrintMonthlyReports from './pages/Reports/PrintMontlyReports.jsx'
 
 const AppContent = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
@@ -45,6 +47,7 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/" element={<RequestConcern />} />
+      <Route path="/print-monthly-reports" element={<PrintMonthlyReports />} />
       <Route path="/request-concern" element={<RequestConcern />} />
       <Route path="/Admin" element={<Login />} />
       <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />

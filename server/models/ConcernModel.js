@@ -58,6 +58,14 @@ const Concern = db.define(
       type: DataTypes.DATE, 
       allowNull: true 
     },
+    year: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    month: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    }
   },
   {
     timestamps: false,

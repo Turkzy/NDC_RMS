@@ -28,6 +28,8 @@ import DashboardPage from "../pages/Dashboard.jsx";
 import PendingConcern from "../pages/Concerns/PendingConcern.jsx";
 import ResolvedConcern from "../pages/Concerns/ResolvedConcern.jsx";
 import AllConcern from "../pages/Concerns/AllConcern.jsx";
+import MonthlyReports from "../pages/Reports/MonthlyReports.jsx";
+import YearlyReports from "../pages/Reports/YearlyReports.jsx";
 
 import SettingsPanel from "../pages/Settings.jsx";
 import ActionLogs from "../pages/Actionlogs.jsx";
@@ -146,9 +148,8 @@ const Dashboard = () => {
             icon={<LuFileChartPie size={20} />}
             text="Reports"
             active={
-              activePanel.startsWith("reports") ||
-              activePanel.startsWith("monthly_report") ||
-              activePanel.startsWith("yearly_report")
+              activePanel.startsWith("reports_monthly") ||
+              activePanel.startsWith("reports_yearly")
             }
             expandable={true}
             itemId="reports"
@@ -193,10 +194,10 @@ const Dashboard = () => {
             {activePanel === "resolved" && <ResolvedConcern />}
             {activePanel === "all_concerns" && <AllConcern />}
             {activePanel === "monthly_report" && (
-              <div>Monthly Report Content</div>
+              <MonthlyReports />
             )}
             {activePanel === "yearly_report" && (
-              <div>Yearly Report Content</div>
+              <YearlyReports />
             )}
             {activePanel === "settings" && <SettingsPanel />}
             {activePanel === "action_logs" && <ActionLogs />}

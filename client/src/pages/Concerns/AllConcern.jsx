@@ -262,7 +262,7 @@ const AllConcern = () => {
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md select-none">
-      <h1 className="text-3xl font-semibold text-gray-600 font-montserrat text-center mb-8">
+      <h1 className="text-3xl font-semibold uppercase text-slate-600 mt-2 text-gray-600 font-montserrat text-center mb-8">
         All Concerns
       </h1>
 

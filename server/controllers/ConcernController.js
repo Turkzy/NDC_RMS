@@ -74,6 +74,31 @@ const collectBodyFields = (body) => {
   return payload;
 };
 
+// Helper function to extract year and month from date
+const extractYearAndMonth = (date) => {
+  if (!date) {
+    const now = new Date();
+    return {
+      year: String(now.getFullYear()),
+      month: now.toLocaleString("en-US", { month: "long" }),
+    };
+  }
+
+  const dateObj = date instanceof Date ? date : new Date(date);
+  if (isNaN(dateObj.getTime())) {
+    const now = new Date();
+    return {
+      year: String(now.getFullYear()),
+      month: now.toLocaleString("en-US", { month: "long" }),
+    };
+  }
+
+  return {
+    year: String(dateObj.getFullYear()),
+    month: dateObj.toLocaleString("en-US", { month: "long" }),
+  };
+};
+
 const generateControlNumber = async (itemId) => {
   try {
     // Get the Item and its associated ItemsCode
@@ -240,6 +265,11 @@ export const createConcern = async (req, res) => {
       payload.createdAt = new Date();
     }
     
+    // Auto-fill year and month based on createdAt
+    const { year, month } = extractYearAndMonth(payload.createdAt);
+    payload.year = year;
+    payload.month = month;
+    
     // Handle dateAccomplished (updatedAt)
     // Only set updatedAt if status is "Completed" or dateAccomplished is provided
     if (req.body.dateAccomplished) {
@@ -315,6 +345,11 @@ export const updateConcern = async (req, res) => {
       // Keep existing createdAt if not provided
       payload.createdAt = concern.createdAt;
     }
+    
+    // Auto-fill year and month based on createdAt (update if createdAt changed)
+    const { year, month } = extractYearAndMonth(payload.createdAt);
+    payload.year = year;
+    payload.month = month;
     
     // Handle dateAccomplished (updatedAt) - can be edited
     if (req.body.dateAccomplished) {
