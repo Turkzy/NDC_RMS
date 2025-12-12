@@ -392,7 +392,7 @@ const Settings = () => {
   const handleCreateAccount = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post(endpoints.user.create, {
+      const res = await api.post(endpoints.auth.register, {
         ...accountForm,
         roleId: Number(accountForm.roleId),
       });

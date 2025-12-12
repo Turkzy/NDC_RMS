@@ -1,53 +1,100 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import api, { endpoints } from './config/api'
 
 import Login from './pages/Login.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import Logout from './pages/Logout.jsx'
 import RequestConcern from "./pages/Concerns/RequestConcern.jsx"
 import CreateAccount from './pages/create-account.jsx'
-import MonthlyReports from './pages/Reports/MonthlyReports.jsx'
 import PrintMonthlyReports from './pages/Reports/PrintMontlyReports.jsx'
+import PrintYearlyReports from './pages/Reports/PrintYearlyReport.jsx'
 
 const AppContent = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
+    // Check authentication by making an API call
+    const checkAuth = async () => {
+      try {
+        const user = localStorage.getItem("user");
+        if (!user) {
+          setIsAuthenticated(false);
+          setIsCheckingAuth(false);
+          return;
+        }
 
-    const handleStorageChange = (e) => {
-      if (e.key === "token") setIsAuthenticated(!!e.newValue);
+        // Verify authentication with backend (token in httpOnly cookie)
+        const response = await api.get(endpoints.auth.verify);
+        if (response.status === 200 && response.data.user) {
+          setIsAuthenticated(true);
+          // Update user data in case it changed
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        } else {
+          setIsAuthenticated(false);
+          localStorage.removeItem("user");
+        }
+      } catch (err) {
+        setIsAuthenticated(false);
+        localStorage.removeItem("user");
+      } finally {
+        setIsCheckingAuth(false);
+      }
     };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+
+    checkAuth();
   }, []);
 
   const ProtectedRoute = ({ element }) => {
-    const token = localStorage.getItem("token");
+    const [authStatus, setAuthStatus] = useState('checking');
+
+    useEffect(() => {
+      const verifyAuth = async () => {
     const user = localStorage.getItem("user");
+        if (!user) {
+          setAuthStatus('unauthorized');
+          return;
+        }
 
-    if (!token || !user) return <Navigate to="/" replace />;
-
-    try {
-      const tokenParts = token.split(".");
-      if (tokenParts.length !== 3) {
-        localStorage.removeItem("token");
+        try {
+          // Verify authentication with backend (token in httpOnly cookie)
+          const response = await api.get(endpoints.auth.verify);
+          if (response.status === 200 && response.data.user) {
+            setAuthStatus('authorized');
+            // Update user data in case it changed
+            localStorage.setItem("user", JSON.stringify(response.data.user));
+          } else {
+            setAuthStatus('unauthorized');
         localStorage.removeItem("user");
-        return <Navigate to="/" replace />;
       }
-      return element;
-    } catch {
-      localStorage.removeItem("token");
+        } catch (err) {
+          setAuthStatus('unauthorized');
       localStorage.removeItem("user");
-      return <Navigate to="/" replace />;
+        }
+      };
+
+      verifyAuth();
+    }, []);
+
+    if (authStatus === 'checking') {
+      return <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
+      </div>;
     }
+
+    if (authStatus === 'unauthorized') {
+      return <Navigate to="/Admin" replace />;
+    }
+
+    return element;
   };
 
   return (
     <Routes>
       <Route path="/" element={<RequestConcern />} />
       <Route path="/print-monthly-reports" element={<PrintMonthlyReports />} />
+      <Route path="/print-yearly-reports" element={<PrintYearlyReports />} />
       <Route path="/request-concern" element={<RequestConcern />} />
       <Route path="/Admin" element={<Login />} />
       <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />

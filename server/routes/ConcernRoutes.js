@@ -7,15 +7,19 @@ import {
   getConcernByControlNumber,
   updateConcern,
 } from "../controllers/ConcernController.js";
+import { authMiddleware } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getConcerns);
+// Public route - status check (no authentication required)
 router.get("/control-number/:controlNumber", getConcernByControlNumber);
-router.get("/:id", getConcernById);
-router.post("/", createConcern);
-router.put("/:id", updateConcern);
-router.delete("/:id", deleteConcern);
+
+// Protected routes - require authentication
+router.get("/", authMiddleware, getConcerns);
+router.get("/:id", authMiddleware, getConcernById);
+router.post("/", authMiddleware, createConcern);
+router.put("/:id", authMiddleware, updateConcern);
+router.delete("/:id", authMiddleware, deleteConcern);
 
 export default router;
 

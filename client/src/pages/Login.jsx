@@ -16,22 +16,17 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
-  // Check for existing token on mount
+  // Check for existing authentication on mount
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        if (decoded.userId && decoded.email) {
-          navigate("/dashboard");
-        } else {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-        }
-      } catch (err) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
+    // Check if user data exists in localStorage
+    // The actual authentication will be verified by ProtectedRoute
+    const user = localStorage.getItem("user");
+    if (user) {
+      // User data exists, let ProtectedRoute verify the cookie
+      // For now, just stay on login page - user will be redirected if authenticated
+    } else {
+      // Clear any stale data
+      localStorage.removeItem("user");
     }
 
     // Load remembered email
@@ -65,7 +60,7 @@ const Login = () => {
     try {
       const response = await api.post(endpoints.auth.login, { email, password });
 
-      const { accessToken, user } = response.data;
+      const { user } = response.data;
 
       if (!user || !user.id || !user.email) {
         setError("User data incomplete. Please contact the administrator.");
@@ -73,10 +68,8 @@ const Login = () => {
         return;
       }
 
-      // Store token and user data
-      localStorage.setItem("token", accessToken);
+      // Store user data in localStorage (token is now in httpOnly cookie)
       localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("lastLoginTime", Date.now().toString());
 
       // Handle "Remember Me"
       if (rememberMe) {

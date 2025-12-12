@@ -15,15 +15,14 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // Enable sending cookies (httpOnly cookies)
 });
 
-// Request interceptor - automatically add auth token to requests
+// Request interceptor - cookies are automatically sent with withCredentials: true
+// No need to manually add Authorization header anymore
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // Cookies are automatically included with withCredentials: true
     return config;
   },
   (error) => {
@@ -36,13 +35,14 @@ const endpoints = {
   auth: {
     login: "/user/login",
     register: "/user/create-account",
+    logout: "/user/logout",
+    verify: "/user/verify",
   },
 
   // USER ROUTES
   user: {
     getUsers: "/user/get-users",
     getUser: (id) => `/user/get/${id}`,
-    create: "/user/add-user",
     update: (id) => `/user/update-user/${id}`,
     delete: (id) => `/user/delete-user/${id}`,
   },
@@ -75,6 +75,12 @@ const endpoints = {
     getAllLocations: "/locations/get-all-locations",
     updateLocation: (id) => `/locations/update-location/${id}`,
     deleteLocation: (id) => `/locations/delete-location/${id}`,
+  },
+
+  // ACTION LOGS ROUTES
+  actionlogs: {
+    getAll: "/action-logs/get-all-action-logs",
+    create: "/action-logs/create-action-log",
   },
 
   // CONCERNS ROUTES

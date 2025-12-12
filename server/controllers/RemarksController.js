@@ -10,7 +10,8 @@ export const getRemarksByConcern = async (req, res) => {
     });
     res.status(200).json(remarks);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Get remarks by concern error:", error);
+    res.status(500).json({ message: "An error occurred. Please try again later." });
   }
 };
 
@@ -38,7 +39,8 @@ export const createRemark = async (req, res) => {
 
     res.status(201).json({ message: "Remark added successfully", remark });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Create remark error:", error);
+    res.status(500).json({ message: "An error occurred. Please try again later." });
   }
 };
 
@@ -66,7 +68,8 @@ export const updateRemark = async (req, res) => {
 
     return res.status(200).json({ message: "Remark updated successfully", remark });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("Update remark error:", error);
+    return res.status(500).json({ message: "An error occurred. Please try again later." });
   }
 };
 
@@ -82,7 +85,8 @@ export const deleteRemark = async (req, res) => {
     await remark.destroy();
     res.status(200).json({ message: "Remark deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Delete remark error:", error);
+    res.status(500).json({ message: "An error occurred. Please try again later." });
   }
 };
 

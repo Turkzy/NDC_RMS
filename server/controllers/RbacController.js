@@ -20,8 +20,8 @@ export const getAllRolePermissions = async (req, res) => {
   
       return res.status(200).json({ error: false, rolePermissions: fullRolePermissions });
     } catch (error) {
-      console.error("Get all role-permissions error:", error.message, error.stack);
-      return res.status(500).json({ error: true, message: error.message || "Internal Server Error" });
+      console.error("Get all role-permissions error:", error);
+      return res.status(500).json({ error: true, message: "Internal Server Error" });
     }
   };
 
@@ -163,8 +163,8 @@ export const getAllRoles = async (req, res) => {
       });
       return res.status(200).json({ error: false, roles });
     } catch (error) {
-      console.error("Get all roles error:", error.message, error.stack);
-      return res.status(500).json({ error: true, message: error.message || "Internal Server Error" });
+      console.error("Get all roles error:", error);
+      return res.status(500).json({ error: true, message: "Internal Server Error" });
     }
   };
 

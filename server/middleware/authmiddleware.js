@@ -2,7 +2,14 @@
 import jwt from "jsonwebtoken";
 
 export const authMiddleware = (req, res, next) => {
-  const token = req.headers["authorization"]?.split(" ")[1];
+  // Try to get token from cookie first (httpOnly cookie)
+  let token = req.cookies?.token;
+  
+  // Fallback to Authorization header for backward compatibility (if needed)
+  if (!token) {
+    token = req.headers["authorization"]?.split(" ")[1];
+  }
+  
   if (!token) return res.status(401).json({ error: "No token provided" });
 
   try {

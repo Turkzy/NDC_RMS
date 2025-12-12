@@ -18,7 +18,7 @@ import {
   LuCalendarRange,
 } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
+import api, { endpoints } from "../config/api";
 
 // COMPONENTS
 import Header from "./Header.jsx";
@@ -43,33 +43,34 @@ const Dashboard = () => {
   useEffect(() => {
     if (isNavigatingRef.current) return;
 
-    const user = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
-
-    if (!user || !token) {
+    const verifyAuth = async () => {
+      const user = localStorage.getItem("user");
+      if (!user) {
       isNavigatingRef.current = true;
-      navigate("/", { replace: true });
+        navigate("/Admin", { replace: true });
       return;
     }
 
     try {
-      const decoded = jwtDecode(token);
-      const currentTime = Date.now() / 1000;
-
-      if (decoded.exp && decoded.exp < currentTime) {
+        // Verify authentication with backend (token in httpOnly cookie)
+        const response = await api.get(endpoints.auth.verify);
+        if (response.status !== 200 || !response.data.user) {
+          isNavigatingRef.current = true;
+          localStorage.removeItem("user");
+          navigate("/Admin", { replace: true });
+          return;
+        }
+        // Update user data in case it changed
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      } catch (error) {
         isNavigatingRef.current = true;
-        localStorage.removeItem("token");
         localStorage.removeItem("user");
-        navigate("/", { replace: true });
+        navigate("/Admin", { replace: true });
         return;
       }
-    } catch (error) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      isNavigatingRef.current = true;
-      navigate("/", { replace: true });
-      return;
-    }
+    };
+
+    verifyAuth();
   }, [navigate]);
 
   const toggleSidebar = () => {

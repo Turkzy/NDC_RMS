@@ -9,7 +9,8 @@ export const createLocation = async (req, res) => {
         await Location.create({ locationName });
         res.status(201).json({ message: "Location created successfully" });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Create location error:", error);
+        res.status(500).json({ message: "An error occurred. Please try again later." });
     }
 }
 
@@ -19,7 +20,8 @@ export const getAllLocations = async (req, res) => {
         const locations = await Location.findAll();
         res.status(200).json({ locations });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Get all locations error:", error);
+        res.status(500).json({ message: "An error occurred. Please try again later." });
     }
 }
 
@@ -35,7 +37,7 @@ export const updateLocation = async (req, res) => {
         res.status(200).json({ message: "Location updated successfully" });
     } catch (error) {
         console.error("Update location error:", error);
-        return res.status(500).json({ message: error.message || "Internal Server Error" });
+        return res.status(500).json({ message: "An error occurred. Please try again later." });
     }
 }
 
@@ -50,6 +52,6 @@ export const deleteLocation = async (req, res) => {
         res.status(200).json({ message: "Location deleted successfully" });
     } catch (error) {
         console.error("Delete location error:", error);
-        return res.status(500).json({ message: error.message || "Internal Server Error" });
+        return res.status(500).json({ message: "An error occurred. Please try again later." });
     }
 }

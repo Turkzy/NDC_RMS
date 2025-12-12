@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/UserModel.js";
 import Role from "../models/Rbac/RoleModel.js";
 
-const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // CREATE NEW ACCOUNT (Self-registration)
 export const createAccount = async (req, res) => {
@@ -47,14 +47,25 @@ export const createAccount = async (req, res) => {
     // Generate JWT with expiration (24 hours default, configurable via env)
     const accessToken = jwt.sign(
       { userId: newUser.id, email: newUser.email, username: newUser.username, roleId: newUser.roleId },
-      ACCESS_TOKEN_SECRET,
+      JWT_SECRET,
       { expiresIn: process.env.TOKEN_EXPIRATION || '24h' }
     );
+
+    // Set httpOnly cookie with token
+const isSecure = process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
+
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    res.cookie('token', accessToken, {
+      httpOnly: true,
+      secure: isSecure, // Only send over HTTPS in production
+      sameSite: 'strict', // CSRF protection
+      maxAge: maxAge,
+      path: '/',
+    });
 
     return res.status(201).json({
       error: false,
       user: { id: newUser.id, email: newUser.email, username: newUser.username, roleId: newUser.roleId },
-      accessToken,
       message: "Registration successful",
     });
   } catch (error) {
@@ -75,22 +86,35 @@ export const login = async (req, res) => {
 
     // Find user
     const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return res.status(400).json({ error: true, message: "User not found" });
+    
+    // Validate password - use generic error message to prevent user enumeration
+    let isPasswordValid = false;
+    if (user) {
+      isPasswordValid = await bcrypt.compare(password, user.password);
     }
-
-    // Validate password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ error: true, message: "Invalid password" });
+    
+    // Always return same generic message whether user exists or password is wrong
+    if (!user || !isPasswordValid) {
+      return res.status(400).json({ error: true, message: "Invalid email or password" });
     }
 
     // Generate JWT with expiration (24 hours default, configurable via env)
     const accessToken = jwt.sign(
-      { userId: user.id, email: user.email, username: user.username },
-      ACCESS_TOKEN_SECRET,
+      { userId: user.id, email: user.email, username: user.username, roleId: user.roleId },
+      JWT_SECRET,
       { expiresIn: process.env.TOKEN_EXPIRATION || '24h' }
     );
+
+    const isSecure = process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
+    // Set httpOnly cookie with token
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    res.cookie('token', accessToken, {
+      httpOnly: true,
+      secure: isSecure, // Only send over HTTPS in production
+      sameSite: 'strict', // CSRF protection
+      maxAge: maxAge,
+      path: '/',
+    });
 
     return res.status(200).json({
       error: false,
@@ -100,7 +124,6 @@ export const login = async (req, res) => {
         username: user.username,
         roleId: user.roleId,
       },
-      accessToken,
       message: "Login successful",
     });
   } catch (error) {
@@ -118,56 +141,6 @@ export const getAllUsers = async (req, res) => {
     return res.status(200).json({ error: false, users });
   } catch (error) {
     console.error("Get all users error:", error);
-    return res.status(500).json({ error: true, message: "Internal Server Error" });
-  }
-};
-
-// ADD USER (Admin-only, requires middleware)
-export const addUser = async (req, res) => {
-  try {
-    const { email, password, username, roleId } = req.body;
-
-    // Validate input
-    if (!email || !password || !username || !roleId) {
-      return res.status(400).json({ error: true, message: "Email, password, username, and roleId are required" });
-    }
-
-    // Validate roleId
-    const role = await Role.findByPk(roleId);
-    if (!role) {
-      return res.status(400).json({ error: true, message: "Invalid roleId" });
-    }
-
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: true, message: "Invalid email format" });
-    }
-
-    // Check if user exists
-    const isEmailTaken = await User.findOne({ where: { email } });
-    if (isEmailTaken) {
-      return res.status(400).json({ error: true, message: "Email already in use" });
-    }
-
-    const isUsernameTaken = await User.findOne({ where: { username } });
-    if (isUsernameTaken) {
-      return res.status(400).json({ error: true, message: "Username already in use" });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
-    const newUser = await User.create({ email, password: hashedPassword, username, roleId });
-
-    return res.status(201).json({
-      error: false,
-      message: "User added successfully",
-      user: { id: newUser.id, email: newUser.email, username: newUser.username, roleId: newUser.roleId },
-    });
-  } catch (error) {
-    console.error("Add user error:", error);
     return res.status(500).json({ error: true, message: "Internal Server Error" });
   }
 };
@@ -237,6 +210,48 @@ export const deleteUser = async (req, res) => {
     return res.status(200).json({ error: false, message: "User deleted successfully" });
   } catch (error) {
     console.error("Delete user error:", error);
+    return res.status(500).json({ error: true, message: "Internal Server Error" });
+  }
+};
+
+// VERIFY AUTHENTICATION (returns current user info if authenticated)
+export const verifyAuth = async (req, res) => {
+  try {
+    // If we reach here, authMiddleware has already verified the token
+    // Return the user info from the decoded token
+    return res.status(200).json({
+      error: false,
+      user: {
+        id: req.user.userId,
+        email: req.user.email,
+        username: req.user.username,
+        roleId: req.user.roleId || null,
+      },
+      message: "Authentication verified",
+    });
+  } catch (error) {
+    console.error("Verify auth error:", error);
+    return res.status(500).json({ error: true, message: "Internal Server Error" });
+  }
+};
+
+// LOGOUT
+export const logout = async (req, res) => {
+  try {
+    // Clear the httpOnly cookie
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    return res.status(200).json({
+      error: false,
+      message: "Logout successful",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
     return res.status(500).json({ error: true, message: "Internal Server Error" });
   }
 };

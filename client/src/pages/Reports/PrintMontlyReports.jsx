@@ -39,13 +39,30 @@ const PrintMonthlyReports = () => {
         console.error("Failed to load print data", err);
       } finally {
         setLoading(false);
-        // Auto-open print dialog once data is loaded
-        setTimeout(() => window.print(), 500);
       }
     };
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Ensure the chart is rendered before triggering print; run only once.
+  const [hasScheduledPrint, setHasScheduledPrint] = useState(false);
+  useEffect(() => {
+    if (loading || hasScheduledPrint) return;
+
+    // Wait a frame for React/Chart.js to paint, then a short delay before printing
+    const rafId = requestAnimationFrame(() => {
+      const timeoutId = setTimeout(() => {
+        window.print();
+      }, 800); // allow chart to finish rendering
+      // Cleanup timeout if component unmounts before it fires
+      return () => clearTimeout(timeoutId);
+    });
+
+    setHasScheduledPrint(true);
+
+    return () => cancelAnimationFrame(rafId);
+  }, [loading, hasScheduledPrint]);
 
   const fetchConcerns = async () => {
     try {
@@ -142,11 +159,31 @@ const PrintMonthlyReports = () => {
     const labels = Object.keys(counts);
     const data = labels.map((label) => counts[label]);
 
-    const backgroundColor = labels.map(() => {
-      const r = Math.floor(120 + Math.random() * 105);
-      const g = Math.floor(120 + Math.random() * 105);
-      const b = Math.floor(120 + Math.random() * 105);
-      return `rgb(${r}, ${g}, ${b})`;
+    const chartColors = [
+      "rgb(255, 150, 150)", // Soft Red
+      "rgb(140, 190, 255)", // Soft Blue
+      "rgb(255, 220, 120)", // Soft Yellow
+      "rgb(140, 240, 200)", // Soft Teal
+      "rgb(190, 150, 255)", // Soft Purple
+      "rgb(255, 180, 130)", // Soft Orange
+      "rgb(190, 190, 190)", // Soft Gray
+      "rgb(150, 170, 255)", // Periwinkle
+      "rgb(255, 150, 230)", // Light Magenta
+      "rgb(160, 240, 160)", // Soft Green
+      "rgb(255, 170, 150)", // Light Coral
+      "rgb(170, 150, 255)", // Soft Violet
+      "rgb(150, 240, 240)", // Light Cyan
+      "rgb(255, 210, 150)", // Light Gold
+      "rgb(220, 170, 255)", // Light Lavender
+      "rgb(150, 210, 255)", // Light Sky
+      "rgb(255, 190, 170)", // Peach
+      "rgb(200, 255, 150)", // Light Lime
+      "rgb(160, 190, 255)", // Light Royal
+      "rgb(255, 150, 190)", // Light Pink
+    ];
+
+    const backgroundColor = labels.map((_, index) => {
+      return chartColors[index % chartColors.length];
     });
 
     return {
@@ -240,9 +277,9 @@ const PrintMonthlyReports = () => {
       <div className="print-toolbar">
         <button
           onClick={() => window.print()}
-          className="px-4 py-2 rounded bg-emerald-500 text-white text-sm font-semibold"
+          className=" float-right px-4 py-2 rounded bg-emerald-500 text-white text-sm font-semibold"
         >
-          Print
+          Print Report
         </button>
       </div>
 

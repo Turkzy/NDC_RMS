@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   ClipboardList,
   Loader,
-  CircleCheck
+  CircleCheckBig,
+  ClockFading
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -14,6 +15,7 @@ import {
   BarElement,
 } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 import api, { endpoints } from "../config/api";
 
 ChartJS.register(
@@ -22,11 +24,12 @@ ChartJS.register(
   Legend,
   CategoryScale,
   LinearScale,
-  BarElement
+  BarElement,
+  ChartDataLabels
 );
 
 const DEFAULT_STATUS_COLORS = {
-  Pending: "#fa2a2a",
+  Pending: "#f76363",
   "In Progress": "#f59e0b",
   Completed: "#22c55e",
   default: "#94a3b8",
@@ -128,6 +131,7 @@ const Dashboard = () => {
               DEFAULT_STATUS_COLORS[label] || DEFAULT_STATUS_COLORS.default
           ),
           borderWidth: 2,
+          hoverOffset: 10,
         },
       ],
     };
@@ -149,7 +153,7 @@ const Dashboard = () => {
         {
           label: "Concerns",
           data: sortedEntries.map(([, count]) => count),
-          backgroundColor: "#2563eb",
+          backgroundColor: "#8cbeff",
           borderRadius: 12,
           barThickness: 26,
         },
@@ -261,7 +265,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <div>
-                    <Loader size={40} />
+                    <ClockFading size={40} />
                   </div>
                 </div>
                 <div className="rounded-2xl border border-slate-200 text-green-600 bg-white p-4 shadow-sm flex items-center justify-between hover:shadow-md transition duration-300">
@@ -277,7 +281,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <div>
-                    <CircleCheck size={40} />
+                    <CircleCheckBig  size={40} />
                   </div>
                 </div>
                 
@@ -299,12 +303,21 @@ const Dashboard = () => {
                 <div className="mt-6 h-72 flex items-center justify-center">
                   {statusCounts.Total ? (
                     <Doughnut
+                      key={`status-${timeRange}-${statusCounts.Total}`}
                       data={statusChartData}
                       options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 800, easing: "easeOutQuart" },
                         plugins: {
                           legend: {
                             position: "bottom",
                             labels: { usePointStyle: true },
+                          },
+                          datalabels: {
+                            color: "#1f2937",
+                            font: { weight: "bold", size: 12 },
+                            formatter: (value) => (value ? value : ""),
                           },
                         },
                       }}
@@ -335,9 +348,12 @@ const Dashboard = () => {
                 <div className="mt-6 h-72">
                   {locationChartData.labels.length ? (
                     <Bar
+                      key={`location-${timeRange}-${locationChartData.labels.join("-")}`}
                       data={locationChartData}
                       options={{
                         responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 800, easing: "easeOutQuart" },
                         plugins: {
                           legend: { display: false },
                         },

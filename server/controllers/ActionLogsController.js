@@ -12,7 +12,7 @@ export const createActionLogs = async (req, res) => {
         res.status(201).json({ message: "Action log created successfully", actionLog });
     } catch (error) {
         console.error("Create action log error:", error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "An error occurred. Please try again later." });
     }
 }
 
@@ -23,7 +23,7 @@ export const getAllActionsLogs = async (req, res) => {
         res.status(200).json({ actionLogs });
     } catch (error) {
         console.error("Get all actions logs error:", error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "An error occurred. Please try again later." });
     }
 }
 
@@ -40,7 +40,7 @@ export const updateActionLog = async (req, res) => {
         res.status(200).json({ message: "Action log updated successfully", actionLog });
     } catch (error) {
         console.error("Update action log error:", error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "An error occurred. Please try again later." });
     }
 };
 
@@ -56,6 +56,6 @@ export const deleteActionLog = async (req, res) => {
         res.status(200).json({ message: "Action log deleted successfully" });
     } catch (error) {
         console.error("Delete action log error:", error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "An error occurred. Please try again later." });
     }
 };

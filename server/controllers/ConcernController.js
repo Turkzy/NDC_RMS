@@ -1,5 +1,7 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
+import { fileTypeFromFile } from "file-type";
 import Concern from "../models/ConcernModel.js";
 import { Remark } from "../models/Remarks/RemarksIndexModel.js";
 import { Items, ItemsCode } from "../models/Dropdown/ItemsIndex.js";
@@ -8,6 +10,16 @@ import { Op } from "sequelize";
 const UPLOAD_DIR = path.resolve("public/concernfiles");
 const ALLOWED_FILE_TYPES = [".jpg", ".jpeg", ".png"];
 const MAX_FILE_SIZE = 5_000_000; // 5 MB
+
+// MIME type whitelist - maps extensions to allowed MIME types
+const ALLOWED_MIME_TYPES = {
+  ".jpg": ["image/jpeg"],
+  ".jpeg": ["image/jpeg"],
+  ".png": ["image/png"],
+};
+
+// File type mapping for file-type library
+const ALLOWED_FILE_TYPE_EXTENSIONS = ["jpg", "jpeg", "png"];
 
 const remarksInclude = {
   model: Remark,
@@ -24,22 +36,74 @@ const ensureUploadDir = () => {
 };
 
 const saveUploadedFile = async (file) => {
+  // 1. Validate file extension
   const ext = path.extname(file.name).toLowerCase();
   if (!ALLOWED_FILE_TYPES.includes(ext)) {
-    throw new Error("Invalid file format");
+    throw new Error("Invalid file format. Only JPG, JPEG, and PNG files are allowed.");
   }
 
+  // 2. Validate file size
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error("File too large");
+    throw new Error(`File too large. Maximum size is ${MAX_FILE_SIZE / 1_000_000}MB`);
+  }
+
+  // 3. Validate MIME type from uploaded file metadata
+  if (file.mimetype) {
+    const allowedMimes = ALLOWED_MIME_TYPES[ext];
+    if (!allowedMimes || !allowedMimes.includes(file.mimetype)) {
+      throw new Error(`Invalid MIME type. Expected ${allowedMimes?.join(" or ")}, got ${file.mimetype}`);
+    }
   }
 
   ensureUploadDir();
 
-  const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+  // 4. Generate secure filename with better collision prevention
+  // Using crypto.randomUUID() for better uniqueness
+  const uniqueId = crypto.randomUUID();
+  const filename = `${Date.now()}-${uniqueId}${ext}`;
   const filePath = path.join(UPLOAD_DIR, filename);
+
+  // 5. Save file temporarily to verify actual content
   await file.mv(filePath);
 
-  return filename;
+  try {
+    // 6. Verify actual file content using file-type library
+    const fileType = await fileTypeFromFile(filePath);
+    
+    if (!fileType) {
+      // Delete the file if we can't determine its type
+      fs.unlinkSync(filePath);
+      throw new Error("Unable to determine file type. File may be corrupted or invalid.");
+    }
+
+    // 7. Verify the detected file type matches allowed types
+    const detectedExt = `.${fileType.ext}`.toLowerCase();
+    if (!ALLOWED_FILE_TYPES.includes(detectedExt)) {
+      fs.unlinkSync(filePath);
+      throw new Error(`File content does not match extension. Detected: ${fileType.mime}, Expected: image/jpeg or image/png`);
+    }
+
+    // 8. Verify MIME type from actual content matches expected
+    const expectedMimes = ALLOWED_MIME_TYPES[ext];
+    if (!expectedMimes.includes(fileType.mime)) {
+      fs.unlinkSync(filePath);
+      throw new Error(`File content MIME type mismatch. Detected: ${fileType.mime}, Expected: ${expectedMimes.join(" or ")}`);
+    }
+
+    return filename;
+  } catch (error) {
+    // Clean up file if validation fails
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    // Re-throw the error with context
+    if (error.message.includes("Unable to determine") || 
+        error.message.includes("does not match") || 
+        error.message.includes("MIME type mismatch")) {
+      throw error;
+    }
+    throw new Error(`File validation failed: ${error.message}`);
+  }
 };
 
 const deleteUploadedFile = (filename) => {
@@ -185,7 +249,8 @@ export const getConcerns = async (req, res) => {
 
     res.status(200).json(filteredConcerns);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Get concerns error:", error);
+    res.status(500).json({ message: "An error occurred. Please try again later." });
   }
 };
 
@@ -200,7 +265,8 @@ export const getConcernById = async (req, res) => {
     }
     res.status(200).json(concern);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Get concern by ID error:", error);
+    res.status(500).json({ message: "An error occurred. Please try again later." });
   }
 };
 
@@ -217,7 +283,8 @@ export const getConcernByControlNumber = async (req, res) => {
     }
     res.status(200).json(concern);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Get concern by control number error:", error);
+    res.status(500).json({ message: "An error occurred. Please try again later." });
   }
 };
 
@@ -241,7 +308,8 @@ export const createConcern = async (req, res) => {
     try {
       controlNumber = await generateControlNumber(req.body.item);
     } catch (controlErr) {
-      return res.status(400).json({ message: controlErr.message });
+      console.error("Generate control number error:", controlErr);
+      return res.status(400).json({ message: "Failed to generate control number. Please try again." });
     }
 
     let filename = null;
@@ -249,7 +317,14 @@ export const createConcern = async (req, res) => {
       try {
         filename = await saveUploadedFile(req.files.file);
       } catch (fileErr) {
-        return res.status(422).json({ message: fileErr.message });
+        console.error("File upload error:", fileErr);
+        // Return generic message for security, but keep specific validation messages for user experience
+        const isValidationError = fileErr.message.includes("Invalid file format") || 
+                                  fileErr.message.includes("File too large") ||
+                                  fileErr.message.includes("Invalid MIME type");
+        return res.status(422).json({ 
+          message: isValidationError ? fileErr.message : "File upload failed. Please try again." 
+        });
       }
     }
 
@@ -285,7 +360,8 @@ export const createConcern = async (req, res) => {
     const concern = await Concern.create(payload);
     res.status(201).json({ message: "Concern created successfully", concern });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Create concern error:", error);
+    res.status(500).json({ message: "An error occurred. Please try again later." });
   }
 };
 
@@ -319,7 +395,8 @@ export const updateConcern = async (req, res) => {
       try {
         controlNumber = await generateControlNumber(req.body.item);
       } catch (controlErr) {
-        return res.status(400).json({ message: controlErr.message });
+        console.error("Generate control number error:", controlErr);
+        return res.status(400).json({ message: "Failed to generate control number. Please try again." });
       }
     }
 
@@ -330,7 +407,14 @@ export const updateConcern = async (req, res) => {
         deleteUploadedFile(concern.fileUrl);
         filename = newFilename;
       } catch (fileErr) {
-        return res.status(422).json({ message: fileErr.message });
+        console.error("File upload error:", fileErr);
+        // Return generic message for security, but keep specific validation messages for user experience
+        const isValidationError = fileErr.message.includes("Invalid file format") || 
+                                  fileErr.message.includes("File too large") ||
+                                  fileErr.message.includes("Invalid MIME type");
+        return res.status(422).json({ 
+          message: isValidationError ? fileErr.message : "File upload failed. Please try again." 
+        });
       }
     }
 
@@ -366,7 +450,8 @@ export const updateConcern = async (req, res) => {
     await concern.update(payload);
     res.status(200).json({ message: "Concern updated successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Update concern error:", error);
+    res.status(500).json({ message: "An error occurred. Please try again later." });
   }
 };
 
@@ -382,6 +467,7 @@ export const deleteConcern = async (req, res) => {
     await concern.destroy();
     res.status(200).json({ message: "Concern deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Delete concern error:", error);
+    res.status(500).json({ message: "An error occurred. Please try again later." });
   }
 };

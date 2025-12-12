@@ -207,12 +207,33 @@ const MonthlyReports = () => {
     const data = labels.map((label) => counts[label]);
 
     // Color palette for maintenance types
-    const backgroundColor = labels.map(() => {
-      const r = Math.floor(120 + Math.random() * 105);
-      const g = Math.floor(120 + Math.random() * 105);
-      const b = Math.floor(120 + Math.random() * 105);
-      return `rgb(${r}, ${g}, ${b})`;
+    const chartColors = [
+      "rgb(255, 150, 150)", // Soft Red
+      "rgb(140, 190, 255)", // Soft Blue
+      "rgb(255, 220, 120)", // Soft Yellow
+      "rgb(140, 240, 200)", // Soft Teal
+      "rgb(190, 150, 255)", // Soft Purple
+      "rgb(255, 180, 130)", // Soft Orange
+      "rgb(190, 190, 190)", // Soft Gray
+      "rgb(150, 170, 255)", // Periwinkle
+      "rgb(255, 150, 230)", // Light Magenta
+      "rgb(160, 240, 160)", // Soft Green
+      "rgb(255, 170, 150)", // Light Coral
+      "rgb(170, 150, 255)", // Soft Violet
+      "rgb(150, 240, 240)", // Light Cyan
+      "rgb(255, 210, 150)", // Light Gold
+      "rgb(220, 170, 255)", // Light Lavender
+      "rgb(150, 210, 255)", // Light Sky
+      "rgb(255, 190, 170)", // Peach
+      "rgb(200, 255, 150)", // Light Lime
+      "rgb(160, 190, 255)", // Light Royal
+      "rgb(255, 150, 190)", // Light Pink
+    ];
+
+    const backgroundColor = labels.map((_, index) => {
+      return chartColors[index % chartColors.length];
     });
+
     return {
       labels,
       datasets: [
@@ -237,7 +258,11 @@ const MonthlyReports = () => {
       month: selectedMonth || currentMonthLabel,
     }).toString();
     // Use relative path so BrowserRouter basename (e.g. /NDC_RMS/) is respected
-    window.open(`print-monthly-reports?${params}`, "_blank", "noopener,noreferrer");
+    window.open(
+      `print-monthly-reports?${params}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
   const handleExportExcel = async () => {
@@ -292,7 +317,7 @@ const MonthlyReports = () => {
     sheet.mergeCells("A1:N1");
     sheet.mergeCells("A2:N2");
     sheet.mergeCells("A3:N3");
-    sheet.getCell("A1").value = "REPAIR AND MAINTENANCE SUMMARY REPORT"; 
+    sheet.getCell("A1").value = "REPAIR AND MAINTENANCE SUMMARY REPORT";
     sheet.getCell("A2").value = "NATIONAL DEVELOPMENT COMPANY";
     sheet.getCell("A3").value = `For the month of ${fileMonth} ${fileYear}`;
 
@@ -606,10 +631,9 @@ const MonthlyReports = () => {
                               0
                             );
                             if (!total || value === 0) return ""; // hide 0% labels
-                            const percentage = (
-                              (value / total) *
-                              100
-                            ).toFixed(1);
+                            const percentage = ((value / total) * 100).toFixed(
+                              1
+                            );
                             return `${percentage}%`;
                           },
                           font: {
@@ -937,13 +961,17 @@ const MonthlyReports = () => {
                         <span className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 inline-flex items-center">
                           {editingConcern.createdAt && editingConcern.updatedAt
                             ? (() => {
-                                const start = new Date(editingConcern.createdAt);
+                                const start = new Date(
+                                  editingConcern.createdAt
+                                );
                                 const end = new Date(editingConcern.updatedAt);
                                 const diffTime = Math.abs(end - start);
                                 const diffDays = Math.ceil(
                                   diffTime / (1000 * 60 * 60 * 24)
                                 );
-                                return `${diffDays} day${diffDays !== 1 ? "s" : ""}`;
+                                return `${diffDays} day${
+                                  diffDays !== 1 ? "s" : ""
+                                }`;
                               })()
                             : "—"}
                         </span>
@@ -962,7 +990,7 @@ const MonthlyReports = () => {
                       </p>
                     </div>
                     <div className="space-y-4">
-                    <div>
+                      <div>
                         <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 block">
                           Remarks
                         </label>

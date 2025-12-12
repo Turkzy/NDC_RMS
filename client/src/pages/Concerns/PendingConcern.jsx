@@ -711,6 +711,13 @@ const PendingConcern = () => {
       if (response.data.message) {
         setSuccess(response.data.message);
         const createdConcern = response.data.concern;
+
+        // Log creation after we have the created concern data
+        await ActionLogs("CREATED CONCERN", {
+          subject: createdConcern?.item,
+          controlNumber: createdConcern?.controlNumber,
+        });
+
         if (createdConcern?.id) {
           await saveRemarkEntry(createdConcern.id, concernForm.remarks);
         }
@@ -782,6 +789,29 @@ const PendingConcern = () => {
         submitData.append("dateAccomplished", concernForm.dateAccomplished);
       }
 
+      const oldMaintenanceType = selectedConcern.item || "";
+      const oldDescription = editingConcern.description || "";
+      const oldLocation = editingConcern.location || "";
+      const oldStatus = editingConcern.status || "";
+      const oldReportedBy = editingConcern.reportedBy || "";
+      const oldEndUser = editingConcern.endUser || "";
+      const oldLevelOfRepair = editingConcern.levelOfRepair || "";
+      const oldTargetDate = editingConcern.targetDate || "";
+      const oldControlNumber = editingConcern.controlNumber || "";
+      const oldRemarks = editingConcern.remarks || "";
+      const oldFileUrl = editingConcern.fileUrl || "";
+      const oldImage = editingConcern.image || null;
+      const oldDateReceived = editingConcern.dateReceived || "";
+      const oldDateAccomplished = editingConcern.dateAccomplished || "";
+
+      if (oldMaintenanceType !== concernForm.item) {
+        changes.push(`Maintenance Type: "${oldMaintenanceType}" → "${concernForm.item}"`);
+      }
+      if (oldDescription !== concernForm.description) {
+        changes.push(`Description: "${oldDescription}" → "${concernForm.description}"`);
+      }
+
+
       const response = await api.put(
         endpoints.concerns.update(editingConcern.id),
         submitData,
@@ -791,6 +821,12 @@ const PendingConcern = () => {
           },
         }
       );
+
+      await ActionLogs("UPDATED CONCERN", {
+        subject: editingConcern.item,
+        controlNumber: editingConcern.controlNumber,
+        Status: concernForm.status,
+      });
 
       if (response.data.message) {
         setSuccess(response.data.message);
@@ -839,6 +875,11 @@ const PendingConcern = () => {
           endpoints.concerns.delete(concern.id)
         );
 
+        await ActionLogs("DELETED CONCERN", {
+          subject: concern.item,
+          controlNumber: concern.controlNumber,
+        });
+
         if (response.data.message) {
           await fetchConcerns();
           Swal.fire({
@@ -885,11 +926,27 @@ const PendingConcern = () => {
       });
   }, [concerns, searchTerm, maintenanceType, levelOfRepair]);
 
-  // Excel import/export helpers removed
+ 
+const ActionLogs = async (action, payload = {}) => {
+  try {
+    const lines = [
+      `Action: ${action}`,
+      ...Object.entries(payload).map(([k, v]) => `- ${k}: ${v ?? "—"}`),
+    ];
+    const details = lines.join("\n");
+
+    await api.post(endpoints.actionlogs.create, {
+      action,
+      details,
+    });
+  } catch (err) {
+    console.error("Failed to write action log:", err);
+  }
+};
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md select-none">
-      <h1 className="text-3xl font-semibold uppercase text-slate-600 mt-2 text-gray-600 font-montserrat text-center mb-8">
+      <h1 className="text-3xl font-semibold uppercase mt-2 text-gray-600 font-montserrat text-center mb-8">
         Pending Concerns
       </h1>
 

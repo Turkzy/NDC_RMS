@@ -1,16 +1,18 @@
 import express from "express";
-import { addUser, createAccount, deleteUser, getAllUsers, login, updateUser } from "../controllers/UserController.js";
-
+import { createAccount, deleteUser, getAllUsers, login, logout, updateUser, verifyAuth } from "../controllers/UserController.js";
+import { authMiddleware } from "../middleware/authmiddleware.js";
+import { loginLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
 router.post("/create-account", createAccount)
-router.post("/login", login)
+router.post("/login", loginLimiter, login)
+router.post("/logout", logout)
+router.get("/verify", authMiddleware, verifyAuth)
 
 //CRUD
-router.post("/add-user", addUser)
-router.get("/get-users", getAllUsers)
-router.put("/update-user/:id", updateUser)
-router.delete("/delete-user/:id", deleteUser)
+router.get("/get-users", authMiddleware, getAllUsers)
+router.put("/update-user/:id", authMiddleware, updateUser)
+router.delete("/delete-user/:id", authMiddleware, deleteUser)
 
 export default router;

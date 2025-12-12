@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, Search, User, Menu } from "lucide-react";
 import logo from "../assets/ndc_logo.png";
+import api, { endpoints } from "../config/api";
 
 const Header = ({ onMenuClick, isSidebarCollapsed }) => {
   const [user, setUser] = useState(null);
@@ -40,13 +41,20 @@ const Header = ({ onMenuClick, isSidebarCollapsed }) => {
     return user.name || user.email || "User";
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (isNavigating) return;
 
     setIsNavigating(true);
 
-    // Clear all authentication-related data
-    localStorage.removeItem("token");
+    try {
+      // Call logout endpoint to clear httpOnly cookie
+      await api.post(endpoints.auth.logout);
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Continue with logout even if API call fails
+    }
+
+    // Clear all authentication-related data from localStorage
     localStorage.removeItem("user");
     localStorage.removeItem("lastLoginTime");
     localStorage.removeItem("rememberedEmail");
@@ -145,7 +153,7 @@ const Header = ({ onMenuClick, isSidebarCollapsed }) => {
                       Profile Settings
                     </button>
                     <button
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 bg-red-500 hover:bg-red-600 rounded-md transition-colors"
                       onClick={handleLogout}
                     >
                       Logout
