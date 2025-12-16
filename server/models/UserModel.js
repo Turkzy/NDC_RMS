@@ -24,6 +24,10 @@ const User = db.define("User", {
       key: "id",
     },
   },
+  imageUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 });
 
 User.associate = (models) => {

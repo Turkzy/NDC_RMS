@@ -25,6 +25,7 @@ import Header from "./Header.jsx";
 
 // PAGES
 import DashboardPage from "../pages/Dashboard.jsx";
+import ProfileSettings from "../pages/ProfileSettings.jsx";
 import PendingConcern from "../pages/Concerns/PendingConcern.jsx";
 import ResolvedConcern from "../pages/Concerns/ResolvedConcern.jsx";
 import AllConcern from "../pages/Concerns/AllConcern.jsx";
@@ -97,6 +98,7 @@ const Dashboard = () => {
       <Header
         onMenuClick={toggleSidebar}
         isSidebarCollapsed={isSidebarCollapsed}
+        onProfileSettings={() => setActivePanel("profile_settings")}
       />
 
       {/* Sidebar and Content Area */}
@@ -191,6 +193,7 @@ const Dashboard = () => {
         >
           <main className="flex-1 p-8 transition duration-300 overflow-y-auto">
             {activePanel === "dashboard" && <DashboardPage />}
+            {activePanel === "profile_settings" && <ProfileSettings />}
             {activePanel === "pending" && <PendingConcern />}
             {activePanel === "resolved" && <ResolvedConcern />}
             {activePanel === "all_concerns" && <AllConcern />}

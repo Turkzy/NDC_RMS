@@ -2,12 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, Search, User, Menu } from "lucide-react";
 import logo from "../assets/ndc_logo.png";
-import api, { endpoints } from "../config/api";
+import api, { endpoints, FILE_BASE_URL } from "../config/api";
 
-const Header = ({ onMenuClick, isSidebarCollapsed }) => {
+const Header = ({ onMenuClick, isSidebarCollapsed, onProfileSettings }) => {
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,10 +16,39 @@ const Header = ({ onMenuClick, isSidebarCollapsed }) => {
     if (userData) {
       try {
         setUser(JSON.parse(userData));
+        setImageError(false); // Reset image error when user changes
       } catch (error) {
         console.error("Error parsing user data:", error);
       }
     }
+    
+    // Listen for user updates from localStorage (cross-tab)
+    const handleStorageChange = () => {
+      const updatedUserData = localStorage.getItem("user");
+      if (updatedUserData) {
+        try {
+          setUser(JSON.parse(updatedUserData));
+          setImageError(false);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+    };
+    
+    // Listen for custom userUpdated event (same-tab updates)
+    const handleUserUpdate = (e) => {
+      if (e.detail) {
+        setUser(e.detail);
+        setImageError(false);
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("userUpdated", handleUserUpdate);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("userUpdated", handleUserUpdate);
+    };
   }, []);
 
   const getUserInitials = () => {
@@ -64,6 +94,13 @@ const Header = ({ onMenuClick, isSidebarCollapsed }) => {
 
     // Navigate to login page
     navigate("/Admin", { replace: true });
+  };
+
+  const handleProfileSettings = () => {
+    setShowUserMenu(false);
+    if (onProfileSettings) {
+      onProfileSettings();
+    }
   };
 
   return (
@@ -114,9 +151,18 @@ const Header = ({ onMenuClick, isSidebarCollapsed }) => {
               className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
               aria-label="User menu"
             >
-              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold text-sm">
-                {getUserInitials()}
-              </div>
+              {user?.imageUrl && !imageError ? (
+                <img
+                  src={`${FILE_BASE_URL}/userimages/${user.imageUrl}`}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-green-500"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold text-sm">
+                  {getUserInitials()}
+                </div>
+              )}
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-800">
                   {getUserDisplayName()}
@@ -148,7 +194,7 @@ const Header = ({ onMenuClick, isSidebarCollapsed }) => {
                   <div className="p-1">
                     <button
                       className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                      onClick={() => setShowUserMenu(false)}
+                      onClick={handleProfileSettings}
                     >
                       Profile Settings
                     </button>

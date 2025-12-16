@@ -714,8 +714,10 @@ const PendingConcern = () => {
 
         // Log creation after we have the created concern data
         await ActionLogs("CREATED CONCERN", {
-          subject: createdConcern?.item,
-          controlNumber: createdConcern?.controlNumber,
+          "Maintenance Type": createdConcern?.item || "—",
+          "Control Number": createdConcern?.controlNumber || "—",
+          "Description": createdConcern?.description || "—",
+          "Location": getLocationLabel(createdConcern?.location) || "—",
         });
 
         if (createdConcern?.id) {
@@ -789,28 +791,40 @@ const PendingConcern = () => {
         submitData.append("dateAccomplished", concernForm.dateAccomplished);
       }
 
-      const oldMaintenanceType = selectedConcern.item || "";
+      const oldMaintenanceType = editingConcern.item || "";
       const oldDescription = editingConcern.description || "";
-      const oldLocation = editingConcern.location || "";
+      const oldLocation = getLocationLabel(editingConcern.location) || "";
       const oldStatus = editingConcern.status || "";
       const oldReportedBy = editingConcern.reportedBy || "";
       const oldEndUser = editingConcern.endUser || "";
       const oldLevelOfRepair = editingConcern.levelOfRepair || "";
-      const oldTargetDate = editingConcern.targetDate || "";
-      const oldControlNumber = editingConcern.controlNumber || "";
-      const oldRemarks = editingConcern.remarks || "";
-      const oldFileUrl = editingConcern.fileUrl || "";
-      const oldImage = editingConcern.image || null;
-      const oldDateReceived = editingConcern.dateReceived || "";
-      const oldDateAccomplished = editingConcern.dateAccomplished || "";
+      // Normalize target date to YYYY-MM-DD format for comparison
+      const oldTargetDate = editingConcern.targetDate 
+        ? (editingConcern.targetDate.includes("T") 
+            ? editingConcern.targetDate.split("T")[0] 
+            : editingConcern.targetDate)
+        : "";
 
-      if (oldMaintenanceType !== concernForm.item) {
-        changes.push(`Maintenance Type: "${oldMaintenanceType}" → "${concernForm.item}"`);
-      }
-      if (oldDescription !== concernForm.description) {
-        changes.push(`Description: "${oldDescription}" → "${concernForm.description}"`);
-      }
-
+      // Normalize date received to YYYY-MM-DD format for comparison
+      const oldDateReceived = editingConcern.dateReceived 
+        ? (editingConcern.dateReceived.includes("T") 
+            ? editingConcern.dateReceived.split("T")[0] 
+            : editingConcern.dateReceived)
+        : (editingConcern.createdAt 
+            ? (editingConcern.createdAt.includes("T") 
+                ? editingConcern.createdAt.split("T")[0] 
+                : editingConcern.createdAt)
+            : "");
+      // Normalize date accomplished to YYYY-MM-DD format for comparison
+      const oldDateAccomplished = editingConcern.dateAccomplished 
+        ? (editingConcern.dateAccomplished.includes("T") 
+            ? editingConcern.dateAccomplished.split("T")[0] 
+            : editingConcern.dateAccomplished)
+        : (editingConcern.updatedAt 
+            ? (editingConcern.updatedAt.includes("T") 
+                ? editingConcern.updatedAt.split("T")[0] 
+                : editingConcern.updatedAt)
+            : "");
 
       const response = await api.put(
         endpoints.concerns.update(editingConcern.id),
@@ -822,11 +836,53 @@ const PendingConcern = () => {
         }
       );
 
-      await ActionLogs("UPDATED CONCERN", {
-        subject: editingConcern.item,
-        controlNumber: editingConcern.controlNumber,
-        Status: concernForm.status,
-      });
+      const changes = [];
+      const oldMaintenanceTypeLabel = getItemLabel(oldMaintenanceType);
+      const newMaintenanceTypeLabel = getItemLabel(concernForm.item);
+      if (oldMaintenanceTypeLabel !== newMaintenanceTypeLabel) {
+        changes.push(`Maintenance Type: "${oldMaintenanceTypeLabel}" → "${newMaintenanceTypeLabel}"`);
+      }
+      if (oldDescription !== concernForm.description) {
+        changes.push(`Description: "${oldDescription}" → "${concernForm.description}"`);
+      }
+      if (oldLocation !== locationName) {
+        changes.push(`Location: "${oldLocation}" → "${locationName}"`);
+      }
+      if (oldStatus !== concernForm.status) {
+        changes.push(`Status: "${oldStatus}" → "${concernForm.status}"`);
+      } 
+      if (oldReportedBy !== concernForm.reportedBy) {
+        changes.push(`Reported By: "${oldReportedBy}" → "${concernForm.reportedBy}"`);
+      }
+      if (oldEndUser !== concernForm.endUser) {
+        changes.push(`End User: "${oldEndUser}" → "${concernForm.endUser}"`);
+      }
+      if (oldLevelOfRepair !== concernForm.levelOfRepair) {
+        changes.push(`Level of Repair: "${oldLevelOfRepair}" → "${concernForm.levelOfRepair}"`);
+      }
+
+      if (oldTargetDate !== concernForm.targetDate) {
+        changes.push(`Target Date: "${oldTargetDate || "—"}" → "${concernForm.targetDate || "—"}"`);
+      }
+
+      // Remarks are handled separately via saveRemarkEntry, so we don't compare them here
+
+      if (oldDateReceived !== concernForm.dateReceived) {
+        changes.push(`Date Received: "${oldDateReceived || "—"}" → "${concernForm.dateReceived || "—"}"`);
+      }
+      if (oldDateAccomplished !== concernForm.dateAccomplished) {
+        changes.push(`Date Accomplished: "${oldDateAccomplished || "—"}" → "${concernForm.dateAccomplished || "—"}"`);
+      }
+
+      if (changes.length > 0) {
+        await ActionLogs("UPDATED CONCERN", {
+          details: changes.join("\n")
+        });
+      } else {
+        await ActionLogs("UPDATED CONCERN", {
+          details: "No changes made"
+        });
+      }
 
       if (response.data.message) {
         setSuccess(response.data.message);
@@ -876,8 +932,9 @@ const PendingConcern = () => {
         );
 
         await ActionLogs("DELETED CONCERN", {
-          subject: concern.item,
-          controlNumber: concern.controlNumber,
+          "Maintenance Type": concern.item || "—",
+          "Control Number": concern.controlNumber || "—",
+          "Description": concern.description || "—",
         });
 
         if (response.data.message) {
@@ -929,11 +986,18 @@ const PendingConcern = () => {
  
 const ActionLogs = async (action, payload = {}) => {
   try {
-    const lines = [
-      `Action: ${action}`,
-      ...Object.entries(payload).map(([k, v]) => `- ${k}: ${v ?? "—"}`),
-    ];
-    const details = lines.join("\n");
+    let details = "";
+    
+    // If details is already formatted (for UPDATE actions), use it directly
+    if (payload.details) {
+      details = payload.details;
+    } else {
+      // For CREATE/DELETE, format as bullet points
+      const lines = Object.entries(payload)
+        .filter(([_, v]) => v !== undefined && v !== null && v !== "")
+        .map(([k, v]) => `- ${k}: ${v}`);
+      details = lines.join("\n");
+    }
 
     await api.post(endpoints.actionlogs.create, {
       action,

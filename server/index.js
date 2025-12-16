@@ -31,9 +31,10 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
+      imgSrc: ["'self'", "data:", "https:", "http://192.168.1.102:5002", "http://localhost:*"],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin resource sharing
   hsts: false // Disabled for HTTP-only deployment
 }));
 
@@ -52,20 +53,55 @@ const allowed = (process.env.ALLOWED_ORIGINS || "")
   .map((o) => o.trim())
   .filter(Boolean);
 
-app.use(
-  cors({
-    origin: allowed.length ? allowed : "",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const corsOptions = {
+  origin: allowed.length ? allowed : true, // Allow all origins if none specified (for development)
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
-// Static file serving
-app.use("/files", express.static(path.join(process.cwd(), "public/files")));
+app.use(cors(corsOptions));
+
+// Middleware to add CORS headers to static file responses
+const staticCorsMiddleware = (req, res, next) => {
+  // Handle preflight OPTIONS requests
+  if (req.method === "OPTIONS") {
+    const origin = req.headers.origin;
+    if (origin && (allowed.length === 0 || allowed.includes(origin))) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+    } else if (allowed.length === 0) {
+      res.setHeader("Access-Control-Allow-Origin", origin || "*");
+    }
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    return res.sendStatus(200);
+  }
+  
+  // Add CORS headers to actual requests
+  const origin = req.headers.origin;
+  if (origin && (allowed.length === 0 || allowed.includes(origin))) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else if (allowed.length === 0) {
+    res.setHeader("Access-Control-Allow-Origin", origin || "*");
+  }
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
+};
+
+// Static file serving with CORS middleware
+app.use("/files", staticCorsMiddleware, express.static(path.join(process.cwd(), "public/files")));
 app.use(
   "/concernfiles",
+  staticCorsMiddleware,
   express.static(path.join(process.cwd(), "public/concernfiles"))
+);
+app.use(
+  "/userimages",
+  staticCorsMiddleware,
+  express.static(path.join(process.cwd(), "public/userimages"))
 );
 
 // File upload

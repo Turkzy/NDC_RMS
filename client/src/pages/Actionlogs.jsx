@@ -9,64 +9,104 @@ const Actionlogs = () => {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [actionFilter, setActionFilter] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const pageSize = 10;
 
- // ===== Details formatting helpers =====
- const splitLines = (text) => (text || '').replace(/\r\n/g, '\n').split('\n').filter(Boolean);
+  // ===== Details formatting helpers =====
+  const splitLines = (text) =>
+    (text || "").replace(/\r\n/g, "\n").split("\n").filter(Boolean);
 
- const parseLogDetails = (details) => {
-   const lines = splitLines(details);
-   if (lines.length === 0) return {  bullets: [] };
-   const bullets = lines.slice(1).map((l) => l.replace(/^\s*-\s*/, '').trim());
-   return { bullets };
- };
+  const parseLogDetails = (details) => {
+    const lines = splitLines(details);
+    if (lines.length === 0) return { bullets: [] };
+    // Remove "- " prefix if present, otherwise use line as-is
+    const bullets = lines
+      .map((l) => l.replace(/^\s*-\s*/, "").trim())
+      .filter(Boolean);
+    return { bullets };
+  };
 
- const splitArrow = (text) => {
-   // Supports → or -> as change arrows
-   const arrowMatch = text.includes(' → ') ? ' → ' : (text.includes(' -> ') ? ' -> ' : null);
-   if (!arrowMatch) return null;
-   const [left, right] = text.split(arrowMatch);
-   return { left: left?.trim() ?? '', right: right?.trim() ?? '', arrow: arrowMatch };
- };
+  const splitArrow = (text) => {
+    // Supports → or -> as change arrows
+    const arrowMatch = text.includes(" → ")
+      ? " → "
+      : text.includes(" -> ")
+      ? " -> "
+      : null;
+    if (!arrowMatch) return null;
+    const [left, right] = text.split(arrowMatch);
+    return {
+      left: left?.trim() ?? "",
+      right: right?.trim() ?? "",
+      arrow: arrowMatch,
+    };
+  };
 
- const extractLabelAndValues = (text) => {
-   const idx = text.indexOf(':');
-   if (idx === -1) return { label: '', valuePart: text };
-   const label = text.slice(0, idx).trim();
-   const valuePart = text.slice(idx + 1).trim();
-   return { label, valuePart };
- };
+  const extractLabelAndValues = (text) => {
+    const idx = text.indexOf(":");
+    if (idx === -1) return { label: "", valuePart: text };
+    const label = text.slice(0, idx).trim();
+    const valuePart = text.slice(idx + 1).trim();
+    return { label, valuePart };
+  };
 
   useEffect(() => {
     fetchActionLogs();
   }, []);
 
-  const fetchActionLogs = async () => {
-    try {
+  const fetchActionLogs = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
       setLoading(true);
-      setError("");
+    }
+    setError("");
+    try {
       const res = await api.get(endpoints.actionlogs.getAll);
       const logs = res.data?.actionLogs || [];
-      setActionlogs(logs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      setActionlogs(
+        logs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      );
     } catch (err) {
       console.error("Failed to fetch action logs:", err);
       setError("Failed to load action logs. Please try again.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   const filtered = actionlogs.filter((log) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      log.action?.toLowerCase().includes(q) ||
-      log.details?.toLowerCase().includes(q)
-    );
+    // Filter by search term
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const matchesSearch =
+        log.action?.toLowerCase().includes(q) ||
+        log.details?.toLowerCase().includes(q);
+      if (!matchesSearch) return false;
+    }
+
+    // Filter by action type
+    if (actionFilter) {
+      if (log.action !== actionFilter) return false;
+    }
+
+    return true;
   });
-  
+
+  const actionOptions = [...new Set(actionlogs.map((log) => log.action))]
+    .filter(Boolean)
+    .map((action) => ({
+      value: action,
+      label: action,
+    }));
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pageItems = filtered.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const renderBullet = (bullet, i) => {
     const { label, valuePart } = extractLabelAndValues(bullet);
@@ -173,6 +213,23 @@ const Actionlogs = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 bg-white text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 "
             />
           </div>
+
+          {/* Filter by Action */}
+          <select
+            value={actionFilter}
+            onChange={(e) => {
+              setActionFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-4 py-2 border border-gray-300 bg-white text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="">--All Actions--</option>
+            {actionOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -196,45 +253,59 @@ const Actionlogs = () => {
           <div className="overflow-x-auto mb-4 ">
             <table className="min-w-full table-auto rounded-xl overflow-hidden text-sm">
               <thead>
-                <tr className="bg-slate-100 font-montserrat text-sm text-gray-800 sticky top-0 z-10">
+                <tr className="bg-slate-300 font-montserrat text-sm text-gray-800 sticky top-0 z-10">
                   <th className="py-2 px-4">Date Created</th>
                   <th className="py-2 px-4">Action</th>
                   <th className="py-2 px-4">Details</th>
                 </tr>
               </thead>
               <tbody className="text-center">
-                {loading ? (
+                {pageItems.length === 0 ? (
                   <tr>
-                    <td colSpan="3" className="px-4 py-4 text-center text-gray-500">
-                      Loading...
-                    </td>
-                  </tr>
-                ) : pageItems.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="px-4 py-4 text-center text-gray-500">
+                    <td
+                      colSpan="3"
+                      className="py-8 text-center text-gray-500 dark:text-gray-400"
+                    >
                       No logs found
                     </td>
                   </tr>
                 ) : (
                   pageItems.map((log) => (
-                    <tr key={log.id} className="bg-white border-b border-gray-200 hover:bg-gray-50 transition">
-                     <td className="px-4 py-2 whitespace-nowrap align-middle">
-                      {new Date(log.createdAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "2-digit",
-                      })}
-                      <br />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(log.createdAt).toLocaleTimeString("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
+                    <tr
+                      key={log.id}
+                      className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                    >
+                      <td className="px-4 py-2 whitespace-nowrap align-middle">
+                        {new Date(log.createdAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "2-digit",
                         })}
-                      </span>
-                    </td>
-                      <td className="px-4 py-2 whitespace-nowrap align-middle">{log.action}</td>
-                      <td className="px-4 py-2 whitespace-pre-wrap align-top text-left">
+                        <br />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(log.createdAt).toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </span>
+                      </td>
+                      <td className="py-2 px-4">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                            (log.action || "").toLowerCase().includes("delete")
+                              ? "bg-red-100 dark:bg-red-900 text-red-800"
+                              : (log.action || "")
+                                  .toLowerCase()
+                                  .includes("create")
+                              ? "bg-green-100 dark:bg-green-900 text-green-800"
+                              : "bg-blue-100 dark:bg-blue-900 text-blue-800"
+                          }`}
+                        >
+                          {log.action || "N/A"}
+                        </span>
+                      </td>
+                      <td className="py-2 px-4 text-gray-700 max-w-[40rem] text-left">
                         {renderDetails(log)}
                       </td>
                     </tr>
@@ -258,7 +329,9 @@ const Actionlogs = () => {
                 Page {currentPage} of {totalPages}
               </span>
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
