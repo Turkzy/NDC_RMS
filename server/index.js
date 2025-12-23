@@ -5,14 +5,15 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import fileUpload from "express-fileupload";
 import helmet from "helmet";
+import timeout from "connect-timeout";
 import db from "./config/database.js";
 import path from "path";
+import { apiLimiter } from "./middleware/rateLimiter.js";
 
 
-//IMPORT FOR EACH ROUTES
+//IMPORT FOR EACH ROUTES  
 import UserRoutes from "./routes/UserRoutes.js";
 import ConcernRoutes from "./routes/ConcernRoutes.js";
-import RbacRoutes from "./routes/RbacRoutes.js";
 import ItemsRoutes from "./routes/Dropdown/ItemsRoutes.js";
 import LocationRoutes from "./routes/Dropdown/LocationRoutes.js";
 import RemarksRoutes from "./routes/RemarksRoutes.js";
@@ -43,6 +44,9 @@ app.use(helmet({
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
+
+// Request timeout - should be after body parsing, before routes
+app.use(timeout('30s'));
 
 // Cookie parser - must be before routes
 app.use(cookieParser());
@@ -106,13 +110,32 @@ app.use(
 
 // File upload
 app.use(fileUpload());
+
+// Apply global API rate limiting - covers all /api routes
+app.use("/api", apiLimiter);
+
+// API routes
 app.use("/api/user", UserRoutes);
-app.use("/api/rbac", RbacRoutes);
 app.use("/api/concerns", ConcernRoutes);
 app.use("/api/items", ItemsRoutes);
 app.use("/api/locations", LocationRoutes);
 app.use("/api/remarks", RemarksRoutes);
 app.use("/api/action-logs", ActionLogsRoutes);
+
+// Timeout error handler - must be after routes
+app.use((req, res, next) => {
+  if (!req.timedout) next();
+});
+
+app.use((err, req, res, next) => {
+  if (req.timedout) {
+    return res.status(408).json({ 
+      error: 'Request timeout', 
+      message: 'The request took too long to process' 
+    });
+  }
+  next(err);
+});
 
 try {
   await db.authenticate();

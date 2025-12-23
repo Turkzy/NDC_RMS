@@ -45,7 +45,7 @@ const Dashboard = () => {
     if (isNavigatingRef.current) return;
 
     const verifyAuth = async () => {
-      const user = localStorage.getItem("user");
+      const user = sessionStorage.getItem("user");
       if (!user) {
       isNavigatingRef.current = true;
         navigate("/Admin", { replace: true });
@@ -57,15 +57,15 @@ const Dashboard = () => {
         const response = await api.get(endpoints.auth.verify);
         if (response.status !== 200 || !response.data.user) {
           isNavigatingRef.current = true;
-          localStorage.removeItem("user");
+          sessionStorage.removeItem("user");
           navigate("/Admin", { replace: true });
           return;
         }
         // Update user data in case it changed
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        sessionStorage.setItem("user", JSON.stringify(response.data.user));
       } catch (error) {
         isNavigatingRef.current = true;
-        localStorage.removeItem("user");
+        sessionStorage.removeItem("user");
         navigate("/Admin", { replace: true });
         return;
       }

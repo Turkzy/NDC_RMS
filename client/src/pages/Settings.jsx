@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ToastContainer, toast, Bounce } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Pencil, Plus, Trash, Trash2, X, Check } from "lucide-react";
+import { Pencil, Plus, Trash2, X, Check } from "lucide-react";
 import api, { endpoints } from "../config/api";
 import Swal from "sweetalert2";
 
@@ -10,7 +10,6 @@ const Settings = () => {
   const [items, setItems] = useState([]);
   const [locations, setLocations] = useState([]);
   const [accounts, setAccounts] = useState([]);
-  const [roles, setRoles] = useState([]);
   const [itemCodes, setItemCodes] = useState([]);
 
   // Modal states
@@ -32,7 +31,6 @@ const Settings = () => {
     username: "",
     email: "",
     password: "",
-    roleId: "",
   });
   const [itemCodeForm, setItemCodeForm] = useState({ itemCode: "" });
 
@@ -41,7 +39,6 @@ const Settings = () => {
     fetchItems();
     fetchLocations();
     fetchAccounts();
-    fetchRoles();
     fetchItemCodes();
   }, []);
 
@@ -80,17 +77,6 @@ const Settings = () => {
     } catch (err) {
       console.error("Error fetching accounts:", err);
       toast.error("Failed to fetch accounts. Please try again.");
-    }
-  };
-
-  const fetchRoles = async () => {
-    try {
-      const res = await api.get(endpoints.rbac.getRoles);
-      if (res.data.error === false && res.data.roles) {
-        setRoles(res.data.roles);
-      }
-    } catch (err) {
-      console.error("Error fetching roles:", err);
     }
   };
 
@@ -394,12 +380,11 @@ const Settings = () => {
     try {
       const res = await api.post(endpoints.auth.register, {
         ...accountForm,
-        roleId: Number(accountForm.roleId),
       });
       if (res.data.error === false) {
         toast.success("Account created successfully!");
         setShowAccountModal(false);
-        setAccountForm({ username: "", email: "", password: "", roleId: "" });
+        setAccountForm({ username: "", email: "", password: ""});
         fetchAccounts();
       }
     } catch (err) {
@@ -412,13 +397,12 @@ const Settings = () => {
     try {
       const res = await api.put(endpoints.user.update(editingAccount.id), {
         ...accountForm,
-        roleId: accountForm.roleId ? Number(accountForm.roleId) : undefined,
       });
       if (res.data.error === false) {
         toast.info("Updated Successfully!");
         setShowAccountModal(false);
         setEditingAccount(null);
-        setAccountForm({ username: "", email: "", password: "", roleId: "" });
+        setAccountForm({ username: "", email: "", password: ""});
         fetchAccounts();
       }
     } catch (err) {
@@ -446,7 +430,6 @@ const Settings = () => {
       username: account.username,
       email: account.email,
       password: "",
-      roleId: account.roleId?.toString() || "",
     });
     setShowAccountModal(true);
   };
@@ -463,14 +446,10 @@ const Settings = () => {
     setEditingItemCode(null);
     setItemForm({ itemName: "", itemId: "" });
     setLocationForm({ locationName: "" });
-    setAccountForm({ username: "", email: "", password: "", roleId: "" });
+    setAccountForm({ username: "", email: "", password: ""});
     setItemCodeForm({ itemCode: "" });
   };
 
-  const getRoleName = (roleId) => {
-    const role = roles.find((r) => r.id === roleId);
-    return role ? role.name : "Unknown";
-  };
 
   return (
     <div className="select-none">
@@ -728,7 +707,6 @@ const Settings = () => {
                 <tr className="font-montserrat text-sm text-gray-800">
                   <th className="px-2 py-1 text-center">Username</th>
                   <th className="px-2 py-1 text-center">Email</th>
-                  <th className="px-2 py-1 text-center">Role</th>
                   <th className="px-2 py-1 text-center">Action</th>
                 </tr>
               </thead>
@@ -753,9 +731,6 @@ const Settings = () => {
                       </td>
                       <td className="px-4 py-2 text-center text-gray-500">
                         {account.email}
-                      </td>
-                      <td className="px-4 py-2 text-center text-gray-500">
-                        {getRoleName(account.roleId)}
                       </td>
                       <td className="px-4 py-2 text-center flex items-center gap-2 justify-center">
                         <button
@@ -972,24 +947,6 @@ const Settings = () => {
                   required={!editingAccount}
                   minLength={6}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium font-montserrat text-gray-600 mb-1">Role</label>
-                <select
-                  value={accountForm.roleId}
-                  onChange={(e) =>
-                    setAccountForm({ ...accountForm, roleId: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                  required
-                >
-                  <option value="" className="font-montserrat text-gray-600">Select Role</option>
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id} className="font-montserrat text-gray-600">
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div className="flex gap-2 justify-end">
                 <button

@@ -2,10 +2,10 @@ import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 
 // LOCALHOST API URL
-//const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5002/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5002/api";
 // PRODUCTION API URL
 //const API_BASE_URL = import.meta.env.VITE_API_URL || "http://202.90.138.42:5002/api";
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://192.168.1.102:5002/api";
+//const API_BASE_URL = import.meta.env.VITE_API_URL || "http://192.168.1.102:5002/api";
 //const API_BASE_URL = import.meta.env.VITE_API_URL || "http://fms.ndc.gov.ph:5002/api";
 
 // Base URL for static files (served outside /api, e.g. /concernfiles)

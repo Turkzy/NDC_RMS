@@ -19,4 +19,28 @@ export const loginLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // Skip successful requests (only count failed attempts)
-})
+});
+
+//Registration rate limiter - stricter to prevent spam accounts
+export const registerLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // Limit each IP to 3 registration requests per hour
+    message: {
+        error: true,
+        message: "Too many registration attempts. Please try again after 1 hour.",
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+//Public concern submission rate limiter - prevent spam/abuse
+export const concernSubmissionLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10, // Limit each IP to 10 concern submissions per hour
+    message: {
+        error: true,
+        message: "Too many concern submissions. Please try again after 1 hour.",
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});

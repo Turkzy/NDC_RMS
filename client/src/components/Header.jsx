@@ -12,7 +12,7 @@ const Header = ({ onMenuClick, isSidebarCollapsed, onProfileSettings }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
+    const userData = sessionStorage.getItem("user");
     if (userData) {
       try {
         setUser(JSON.parse(userData));
@@ -22,9 +22,9 @@ const Header = ({ onMenuClick, isSidebarCollapsed, onProfileSettings }) => {
       }
     }
     
-    // Listen for user updates from localStorage (cross-tab)
+    // Listen for user updates from sessionStorage (cross-tab)
     const handleStorageChange = () => {
-      const updatedUserData = localStorage.getItem("user");
+      const updatedUserData = sessionStorage.getItem("user");
       if (updatedUserData) {
         try {
           setUser(JSON.parse(updatedUserData));
@@ -84,8 +84,8 @@ const Header = ({ onMenuClick, isSidebarCollapsed, onProfileSettings }) => {
       // Continue with logout even if API call fails
     }
 
-    // Clear all authentication-related data from localStorage
-    localStorage.removeItem("user");
+    // Clear all authentication-related data from sessionStorage
+    sessionStorage.removeItem("user");
     localStorage.removeItem("lastLoginTime");
     localStorage.removeItem("rememberedEmail");
 

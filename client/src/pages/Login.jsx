@@ -18,15 +18,15 @@ const Login = () => {
 
   // Check for existing authentication on mount
   useEffect(() => {
-    // Check if user data exists in localStorage
+    // Check if user data exists in sessionStorage
     // The actual authentication will be verified by ProtectedRoute
-    const user = localStorage.getItem("user");
+    const user = sessionStorage.getItem("user");
     if (user) {
       // User data exists, let ProtectedRoute verify the cookie
       // For now, just stay on login page - user will be redirected if authenticated
     } else {
       // Clear any stale data
-      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
     }
 
     // Load remembered email
@@ -68,8 +68,8 @@ const Login = () => {
         return;
       }
 
-      // Store user data in localStorage (token is now in httpOnly cookie)
-      localStorage.setItem("user", JSON.stringify(user));
+      // Store user data in sessionStorage (token is now in httpOnly cookie)
+      sessionStorage.setItem("user", JSON.stringify(user));
 
       // Handle "Remember Me"
       if (rememberMe) {

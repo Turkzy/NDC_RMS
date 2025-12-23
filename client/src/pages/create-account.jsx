@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { endpoints } from "../config/api";
 
@@ -8,35 +8,20 @@ const CreateAccount = () => {
     email: "",
     username: "",
     password: "",
-    roleId: "",
   });
-  const [roles, setRoles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
-  const [loadingRoles, setLoadingRoles] = useState(true);
-
-  // Fetch roles on component mount
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const response = await api.get(endpoints.rbac.getRoles);
-        if (response.data.error === false && response.data.roles) {
-          setRoles(response.data.roles);
-        }
-      } catch (err) {
-        console.error("Error fetching roles:", err);
-        setError("Failed to load roles. Please refresh the page.");
-      } finally {
-        setLoadingRoles(false);
-      }
-    };
-    fetchRoles();
-  }, []);
+  const [passwordErrors, setPasswordErrors] = useState([]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear password errors when user starts typing
+    if (name === 'password' && passwordErrors.length > 0) {
+      setPasswordErrors([]);
+      setError(null);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -44,21 +29,37 @@ const CreateAccount = () => {
     setIsSubmitting(true);
     setError(null);
     setMessage(null);
+    setPasswordErrors([]);
 
     try {
-      // Convert roleId to number for backend
-      const submitData = {
-        ...formData,
-        roleId: Number(formData.roleId),
-      };
-      await api.post(endpoints.auth.register, submitData);
+      await api.post(endpoints.auth.register, formData);
       setMessage("Account created successfully. Redirecting to login...");
       setTimeout(() => navigate("/admin"), 1500);
     } catch (err) {
-      const apiMessage =
-        err.response?.data?.message ||
-        "Unable to create account. Please try again.";
-      setError(apiMessage);
+      // Check if it's a validation error with details
+      if (err.response?.data?.details && Array.isArray(err.response.data.details)) {
+        // Filter password-related errors
+        const passwordValidationErrors = err.response.data.details
+          .filter(detail => detail.field === 'password')
+          .map(detail => detail.message);
+        
+        if (passwordValidationErrors.length > 0) {
+          setPasswordErrors(passwordValidationErrors);
+          setError("Password does not meet requirements:");
+        } else {
+          // Other validation errors
+          const otherErrors = err.response.data.details
+            .map(detail => `${detail.field}: ${detail.message}`)
+            .join(', ');
+          setError(otherErrors || err.response.data.message);
+        }
+      } else {
+        // Generic error message
+        const apiMessage =
+          err.response?.data?.message ||
+          "Unable to create account. Please try again.";
+        setError(apiMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -115,31 +116,26 @@ const CreateAccount = () => {
               type="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
+              className={`w-full border rounded px-3 py-2 ${
+                passwordErrors.length > 0 ? "border-red-500" : ""
+              }`}
               required
-              minLength={6}
+              minLength={8}
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="roleId">
-              Role
-            </label>
-            <select
-              id="roleId"
-              name="roleId"
-              value={formData.roleId}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-              required
-              disabled={loadingRoles}
-            >
-              <option value="">Select a role</option>
-              {roles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
+            {/* Display password validation errors */}
+            {passwordErrors.length > 0 && (
+              <ul className="mt-2 text-sm text-red-600 list-disc list-inside">
+                {passwordErrors.map((errorMsg, index) => (
+                  <li key={index}>{errorMsg}</li>
+                ))}
+              </ul>
+            )}
+            {/* Password requirements hint */}
+            {passwordErrors.length === 0 && formData.password && (
+              <p className="mt-1 text-xs text-gray-500">
+                Password must be at least 8 characters with uppercase, lowercase, number, and special character
+              </p>
+            )}
           </div>
           <button
             type="submit"
@@ -152,7 +148,7 @@ const CreateAccount = () => {
         {message && (
           <p className="text-green-600 text-sm mt-4 text-center">{message}</p>
         )}
-        {error && (
+        {error && passwordErrors.length === 0 && (
           <p className="text-red-600 text-sm mt-4 text-center">{error}</p>
         )}
         <button

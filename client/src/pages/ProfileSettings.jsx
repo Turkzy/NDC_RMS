@@ -16,7 +16,7 @@ const ProfileSettings = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("user");
+    const stored = sessionStorage.getItem("user");
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -31,7 +31,7 @@ const ProfileSettings = () => {
           setProfileImagePreview(`${FILE_BASE_URL}/userimages/${parsed.imageUrl}`);
         }
       } catch (err) {
-        console.error("Invalid user in localStorage:", err);
+        console.error("Invalid user in sessionStorage:", err);
       }
     }
   }, []);
@@ -134,7 +134,7 @@ const ProfileSettings = () => {
           imageUrl: res.data.user?.imageUrl || user.imageUrl
         };
 
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+        sessionStorage.setItem("user", JSON.stringify(updatedUser));
         setUser(updatedUser);
         setForm((prev) => ({ ...prev, password: "" }));
         setProfileImage(null);

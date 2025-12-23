@@ -18,7 +18,7 @@ const AppContent = () => {
     // Check authentication by making an API call
     const checkAuth = async () => {
       try {
-        const user = localStorage.getItem("user");
+        const user = sessionStorage.getItem("user");
         if (!user) {
           setIsAuthenticated(false);
           setIsCheckingAuth(false);
@@ -30,14 +30,14 @@ const AppContent = () => {
         if (response.status === 200 && response.data.user) {
           setIsAuthenticated(true);
           // Update user data in case it changed
-          localStorage.setItem("user", JSON.stringify(response.data.user));
+          sessionStorage.setItem("user", JSON.stringify(response.data.user));
         } else {
           setIsAuthenticated(false);
-          localStorage.removeItem("user");
+          sessionStorage.removeItem("user");
         }
       } catch (err) {
         setIsAuthenticated(false);
-        localStorage.removeItem("user");
+        sessionStorage.removeItem("user");
       } finally {
         setIsCheckingAuth(false);
       }
@@ -51,7 +51,7 @@ const AppContent = () => {
 
     useEffect(() => {
       const verifyAuth = async () => {
-    const user = localStorage.getItem("user");
+    const user = sessionStorage.getItem("user");
         if (!user) {
           setAuthStatus('unauthorized');
           return;
@@ -63,14 +63,14 @@ const AppContent = () => {
           if (response.status === 200 && response.data.user) {
             setAuthStatus('authorized');
             // Update user data in case it changed
-            localStorage.setItem("user", JSON.stringify(response.data.user));
+            sessionStorage.setItem("user", JSON.stringify(response.data.user));
           } else {
             setAuthStatus('unauthorized');
-        localStorage.removeItem("user");
+        sessionStorage.removeItem("user");
       }
         } catch (err) {
           setAuthStatus('unauthorized');
-      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
         }
       };
 

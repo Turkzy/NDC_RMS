@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/UserModel.js";
-import Role from "../models/Rbac/RoleModel.js";
 import { fileTypeFromFile } from "file-type";
 import path from "path";
 import fs from "fs";
@@ -105,17 +104,11 @@ const deleteUploadedFile = (filename) => {
 // CREATE NEW ACCOUNT (Self-registration)
 export const createAccount = async (req, res) => {
   try {
-    const { email, password, username, roleId } = req.body;
+    const { email, password, username } = req.body;
 
     // Validate input
-    if (!email || !password || !username || !roleId) {
-      return res.status(400).json({ error: true, message: "Email, password, username, and roleId are required" });
-    }
-
-    // Validate roleId
-    const role = await Role.findByPk(roleId);
-    if (!role) {
-      return res.status(400).json({ error: true, message: "Invalid roleId" });
+    if (!email || !username) {
+      return res.status(400).json({ error: true, message: "Email and username are required" });
     }
 
     // Basic email format validation
@@ -139,11 +132,11 @@ export const createAccount = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const newUser = await User.create({ email, password: hashedPassword, username, roleId });
+    const newUser = await User.create({ email, password: hashedPassword, username });
 
     // Generate JWT with expiration (24 hours default, configurable via env)
     const accessToken = jwt.sign(
-      { userId: newUser.id, email: newUser.email, username: newUser.username, roleId: newUser.roleId },
+      { userId: newUser.id, email: newUser.email, username: newUser.username },
       JWT_SECRET,
       { expiresIn: process.env.TOKEN_EXPIRATION || '24h' }
     );
@@ -162,7 +155,7 @@ const isSecure = process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV ==
 
     return res.status(201).json({
       error: false,
-      user: { id: newUser.id, email: newUser.email, username: newUser.username, roleId: newUser.roleId, imageUrl: newUser.imageUrl },
+      user: { id: newUser.id, email: newUser.email, username: newUser.username, imageUrl: newUser.imageUrl },
       message: "Registration successful",
     });
   } catch (error) {
@@ -197,7 +190,7 @@ export const login = async (req, res) => {
 
     // Generate JWT with expiration (24 hours default, configurable via env)
     const accessToken = jwt.sign(
-      { userId: user.id, email: user.email, username: user.username, roleId: user.roleId },
+      { userId: user.id, email: user.email, username: user.username },
       JWT_SECRET,
       { expiresIn: process.env.TOKEN_EXPIRATION || '24h' }
     );
@@ -219,7 +212,6 @@ export const login = async (req, res) => {
         id: user.id,
         email: user.email,
         username: user.username,
-        roleId: user.roleId,
         imageUrl: user.imageUrl,
       },
       message: "Login successful",
@@ -301,7 +293,7 @@ export const updateUser = async (req, res) => {
       return res.status(404).json({ error: true, message: "User not found or not updated" });
     }
 
-    // Fetch updated user with role
+    // Fetch updated user
     const updatedUser = await User.findByPk(id, {
       attributes: { exclude: ["password"] },
     });
@@ -355,7 +347,6 @@ export const verifyAuth = async (req, res) => {
         id: fullUser.id,
         email: fullUser.email,
         username: fullUser.username,
-        roleId: fullUser.roleId || null,
         imageUrl: fullUser.imageUrl,
       },
       message: "Authentication verified",

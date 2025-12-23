@@ -164,7 +164,7 @@ const PendingConcern = () => {
 
   const getCurrentUserLabel = () => {
     try {
-      const stored = localStorage.getItem("user");
+      const stored = sessionStorage.getItem("user");
       if (!stored) return null;
       const parsed = JSON.parse(stored);
       return (
