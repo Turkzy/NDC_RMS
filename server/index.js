@@ -58,7 +58,7 @@ const allowed = (process.env.ALLOWED_ORIGINS || "")
   .filter(Boolean);
 
 const corsOptions = {
-  origin: allowed.length ? allowed : true, // Allow all origins if none specified (for development)
+  origin: allowed.length ? allowed : "http://localhost:5173", // Allow all origins if none specified (for development)
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
